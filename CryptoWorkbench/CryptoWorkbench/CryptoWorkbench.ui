@@ -1,0 +1,29 @@
+<UI version="4.0" >
+ <class>CryptoWorkbenchClass</class>
+ <widget class="QMainWindow" name="CryptoWorkbenchClass" >
+  <property name="objectName" >
+   <string notr="true">CryptoWorkbenchClass</string>
+  </property>
+  <property name="geometry" >
+   <rect>
+	<x>0</x>
+	<y>0</y>
+	<width>600</width>
+	<height>400</height>
+   </rect>
+  </property>
+  <property name="windowTitle" >
+   <string>CryptoWorkbench</string>
+  </property>
+  <widget class="QMenuBar" name="menuBar" />
+  <widget class="QToolBar" name="mainToolBar" />
+  <widget class="QWidget" name="centralWidget" />
+  <widget class="QStatusBar" name="statusBar" />
+ </widget>
+ <layoutDefault spacing="6" margin="11" />
+ <pixmapfunction></pixmapfunction>
+ <resources>
+   <include location="CryptoWorkbench.qrc"/>
+ </resources>
+ <connections/>
+</UI>
