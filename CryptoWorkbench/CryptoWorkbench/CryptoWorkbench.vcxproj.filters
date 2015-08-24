@@ -46,7 +46,25 @@
     <ClCompile Include="GeneratedFiles\qrc_CryptoWorkbench.cpp">
       <Filter>Generated Files</Filter>
     </ClCompile>
+    <ClCompile Include="CodeEditor.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\Debug\moc_CodeEditor.cpp">
+      <Filter>Generated Files\Debug</Filter>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\Release\moc_CodeEditor.cpp">
+      <Filter>Generated Files\Release</Filter>
+    </ClCompile>
     <ClCompile Include="JavascriptInterface.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\Debug\moc_JavascriptInterface.cpp">
+      <Filter>Generated Files\Debug</Filter>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\Release\moc_JavascriptInterface.cpp">
+      <Filter>Generated Files\Release</Filter>
+    </ClCompile>
+    <ClCompile Include="ScriptHighlighter.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -60,12 +78,18 @@
     <CustomBuild Include="CryptoWorkbench.h">
       <Filter>Source Files</Filter>
     </CustomBuild>
+    <CustomBuild Include="CodeEditor.h">
+      <Filter>Source Files</Filter>
+    </CustomBuild>
+    <CustomBuild Include="JavascriptInterface.h">
+      <Filter>Source Files</Filter>
+    </CustomBuild>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="GeneratedFiles\ui_CryptoWorkbench.h">
       <Filter>Generated Files</Filter>
     </ClInclude>
-    <ClInclude Include="JavascriptInterface.h">
+    <ClInclude Include="ScriptHighlighter.h">
       <Filter>Source Files</Filter>
     </ClInclude>
   </ItemGroup>
