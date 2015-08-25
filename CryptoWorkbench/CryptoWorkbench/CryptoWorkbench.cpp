@@ -244,11 +244,12 @@ void CryptoWorkbench::runClicked()
 {
 	QString script = codeEditor->toPlainText();
 	QString input = leftEditor->toPlainText();
+	QString output = rightEditor->toPlainText();
 	rightEditor->setPlainText("");
 
 	QElapsedTimer timer;
 	timer.start();
-	QString result = js->evaluate(script, input);
+	QString result = js->evaluate(script, input, output);
 	ui.statusBar->showMessage(QString("Script runtime: %1 ms").arg(timer.elapsed()));
 
 	rightEditor->appendPlainText(result);

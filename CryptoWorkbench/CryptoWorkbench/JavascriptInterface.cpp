@@ -1,6 +1,8 @@
 #include "JavascriptInterface.h"
+#include "AlgorithmsCrypto.h"
 #include "include/libplatform/libplatform.h"
 #include "include/v8.h"
+#include <functional>
 #include <QDebug>
 
 using namespace v8;
@@ -21,6 +23,31 @@ QString stringValue(Local<Value> obj)
 {
 	String::Utf8Value objStr(obj);
 	return QString::fromUtf8(*objStr, objStr.length());
+}
+
+namespace Callback
+{
+	using namespace v8;
+
+	void rot13(const FunctionCallbackInfo<Value>& args)
+	{
+		if (args.Length() < 1)
+			return;
+		HandleScope scope(args.GetIsolate());
+		AlgorithmsCrypto* p = reinterpret_cast<AlgorithmsCrypto*>(Local<External>::Cast(args.Data())->Value());
+		QString result = p->rot13(stringValue(args[0]));
+		args.GetReturnValue().Set(String::NewFromUtf8(args.GetIsolate(), result.toUtf8()));
+	}
+
+	void replaceLetters(const FunctionCallbackInfo<Value>& args)
+	{
+		if (args.Length() < 3)
+			return;
+		HandleScope scope(args.GetIsolate());
+		AlgorithmsCrypto* p = reinterpret_cast<AlgorithmsCrypto*>(Local<External>::Cast(args.Data())->Value());
+		QString result = p->replaceLetters(stringValue(args[0]), stringValue(args[1]), stringValue(args[2]), true);
+		args.GetReturnValue().Set(String::NewFromUtf8(args.GetIsolate(), result.toUtf8()));
+	}
 }
 
 
@@ -97,44 +124,18 @@ void JavascriptInterface::testV8()
 	qDebug() << *utf8;
 }
 
-static void LogCallback(const v8::FunctionCallbackInfo<v8::Value>& args)
+static void DebugCallback(const v8::FunctionCallbackInfo<v8::Value>& args)
 {
-	
-
 	if (args.Length() < 1)
 		return;
 	HandleScope scope(args.GetIsolate());
-	Local<Value> arg = args[0];
-	String::Utf8Value value(arg);
+	String::Utf8Value value(args[0]);
 	qDebug() << *value;
 }
 
-void Version(const v8::FunctionCallbackInfo<v8::Value>& args)
-{
-	Local<Object> self = args.Holder();
-	Local<External> wrap = Local<External>::Cast(self->GetInternalField(0));
-	void* ptr = wrap->Value();
+#define DEFINE_FUNCTION(function) cryptoObject->Set(String::NewFromUtf8(isolate, #function), FunctionTemplate::New(isolate, Callback::function, External::New(isolate, algorithmsCrypto.data())))
 
-	QString* str = reinterpret_cast<QString*>(ptr);
-	qDebug() << *str;
-
-
-	args.GetReturnValue().Set(
-		v8::String::NewFromUtf8(args.GetIsolate(), v8::V8::GetVersion(),
-		v8::NewStringType::kNormal).ToLocalChecked());
-}
-
-void GetText(Local<String> property, const PropertyCallbackInfo<Value>& info)
-{
-	Local<Object> self = info.Holder();
-	Local<External> wrap = Local<External>::Cast(self->GetInternalField(0));
-	void* ptr = wrap->Value();
-	QString value = *static_cast<QString*>(ptr);
-	info.GetReturnValue().Set(value.length());
-}
-
-
-QString JavascriptInterface::evaluate(const QString& scriptText, const QString& inputText)
+QString JavascriptInterface::evaluate(const QString& scriptText, const QString& inputText, const QString& outputText)
 {
 	Isolate::Scope isolate_scope(isolate);
 
@@ -145,35 +146,20 @@ QString JavascriptInterface::evaluate(const QString& scriptText, const QString& 
 	// built-in global functions.
 	Local<ObjectTemplate> global = ObjectTemplate::New(isolate);
 
-	Local<ObjectTemplate> textTemplate = ObjectTemplate::New(isolate);
-	textTemplate->SetInternalFieldCount(1);
-	textTemplate->SetAccessor(String::NewFromUtf8(isolate, "text"), GetText);
+	global->Set(String::NewFromUtf8(isolate, "input"), String::NewFromUtf8(isolate, inputText.toUtf8()));
+	global->Set(String::NewFromUtf8(isolate, "output"), String::NewFromUtf8(isolate, outputText.toUtf8()));
 
-	QString* textPtr = new QString(inputText);
+	QScopedPointer<AlgorithmsCrypto> algorithmsCrypto(new AlgorithmsCrypto());
+	Local<ObjectTemplate> cryptoObject = ObjectTemplate::New(isolate);
 
-	Local<Object> textObj = textTemplate->NewInstance();
-	textObj->SetInternalField(0, External::New(isolate, textPtr));
+	DEFINE_FUNCTION(rot13);
+	DEFINE_FUNCTION(replaceLetters);
 
-	global->Set(String::NewFromUtf8(isolate, "Text"), textTemplate);
-	
+	//cryptoObject->Set(String::NewFromUtf8(isolate, "rot13"), FunctionTemplate::New(isolate, Callback::rot13, External::New(isolate, algorithmsCrypto.data())));
+	//cryptoObject->Set(String::NewFromUtf8(isolate, "replaceLetters"), FunctionTemplate::New(isolate, Callback::replaceLetters, External::New(isolate, algorithmsCrypto.data())));
 
-	//Local<ObjectTemplate> testObject = ObjectTemplate::New(isolate);
-	//testObject->SetInternalFieldCount(1);
-
-	//testObject->Set(String::NewFromUtf8(isolate, "version"), FunctionTemplate::New(isolate, Version));
-	//testObject->Set(String::NewFromUtf8(isolate, "log"), FunctionTemplate::New(isolate, LogCallback));
-
-	//Local<Object> obj = testObject->NewInstance();
-	//obj->SetInternalField(0, External::New(isolate, testPtr));
-
-	
-
-	
-
-
-
-	//global->Set(String::NewFromUtf8(isolate, "version"), FunctionTemplate::New(isolate, Version));
-	//global->Set(String::NewFromUtf8(isolate, "log"), FunctionTemplate::New(isolate, LogCallback));
+	global->Set(String::NewFromUtf8(isolate, "Crypto"), cryptoObject);
+	global->Set(String::NewFromUtf8(isolate, "debug"), FunctionTemplate::New(isolate, DebugCallback));
 
 	// Create a new context.
 	Local<Context> context = Context::New(isolate, NULL, global);
@@ -203,9 +189,15 @@ QString JavascriptInterface::evaluate(const QString& scriptText, const QString& 
 		return QString();
 	}
 
-	// Convert the result to an UTF8 string and print it.
+	// Get output variable.
+	Local<Value> outputValue = context->Global()->Get(String::NewFromUtf8(isolate, "output"));
+
 	QString resultString = stringValue(result.ToLocalChecked());
-	return resultString;
+	QString outputString = stringValue(outputValue);
+
+	if (outputString.isEmpty())
+		return resultString;
+	return outputString;
 }
 
 void JavascriptInterface::reportException(v8::TryCatch* trycatch)

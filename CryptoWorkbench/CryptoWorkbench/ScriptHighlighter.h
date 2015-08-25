@@ -45,10 +45,11 @@ private:
 	QTextCharFormat keywordFormat;
 	QTextCharFormat numberFormat;
 	QTextCharFormat quotationFormat;
-	QTextCharFormat vectorClassFormat;
-	QTextCharFormat vectorMembersFormat;
+	QTextCharFormat globalClassFormat;
+	QTextCharFormat objectMembersFormat;
 	QTextCharFormat singleLineCommentFormat;
 	QTextCharFormat multiLineCommentFormat;
+	QTextCharFormat globalPropertyFormat;
 	
 	QRegularExpression commentStartExpression;
 	QRegularExpression commentEndExpression;

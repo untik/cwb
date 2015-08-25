@@ -1,6 +1,7 @@
 #include "ScriptHighlighter.h"
 #include <QDebug>
 #include <QMetaMethod>
+#include "AlgorithmsCrypto.h"
 
 ScriptHighlighter::ScriptHighlighter(QTextDocument* parent, StyleType style)
 	: QSyntaxHighlighter(parent)
@@ -27,15 +28,26 @@ ScriptHighlighter::ScriptHighlighter(QTextDocument* parent, StyleType style)
 	re = QRegularExpression("\".*\"");
 	highlightingRules.append(HighlightingRule(re, quotationFormat));
 
-	re = QRegularExpression("\\bVector\\b");
-	highlightingRules.append(HighlightingRule(re, vectorClassFormat));
+	re = QRegularExpression("\\binput\\b");
+	highlightingRules.append(HighlightingRule(re, globalPropertyFormat));
 
-	// int count = VectorFilterInterface::staticMetaObject.methodCount();
-	// for (int i = 0; i < count; i++) {
-		// QString name = VectorFilterInterface::staticMetaObject.method(i).name();
-		// re = QRegularExpression("\\bVector\\." + name + "\\b");
-		// highlightingRules.append(HighlightingRule(re, vectorMembersFormat, 7));
-	// }
+	re = QRegularExpression("\\boutput\\b");
+	highlightingRules.append(HighlightingRule(re, globalPropertyFormat));
+
+	re = QRegularExpression("\\bCrypto\\b");
+	highlightingRules.append(HighlightingRule(re, globalClassFormat));
+
+	QStringList exceptions;
+	exceptions << "destroyed" << "objectNameChanged" << "deleteLater" << "_q_reregisterTimers";
+
+	int count = AlgorithmsCrypto::staticMetaObject.methodCount();
+	for (int i = 0; i < count; i++) {
+		QString name = AlgorithmsCrypto::staticMetaObject.method(i).name();
+		if (!exceptions.contains(name)) {
+			re = QRegularExpression("\\bCrypto\\." + name + "\\b");
+			highlightingRules.append(HighlightingRule(re, objectMembersFormat, 7));
+		}
+	}
 
 	re = QRegularExpression("//[^\n]*");
 	highlightingRules.append(HighlightingRule(re, singleLineCommentFormat));
@@ -83,20 +95,22 @@ void ScriptHighlighter::initStyle(StyleType style)
 			keywordFormat.setForeground(Qt::darkBlue);
 			numberFormat.setForeground(Qt::darkMagenta);
 			quotationFormat.setForeground(Qt::darkRed);
-			vectorClassFormat.setForeground(Qt::gray);
-			vectorMembersFormat.setForeground(Qt::darkCyan);
+			globalClassFormat.setForeground(Qt::gray);
+			objectMembersFormat.setForeground(Qt::darkCyan);
 			singleLineCommentFormat.setForeground(Qt::darkGreen);
 			multiLineCommentFormat.setForeground(Qt::darkGreen);
+			globalPropertyFormat.setForeground(Qt::darkCyan);
 			break;
 			
 		case ScriptHighlighter::StyleDark:
 			keywordFormat.setForeground(Qt::darkBlue);
 			numberFormat.setForeground(Qt::darkMagenta);
 			quotationFormat.setForeground(Qt::darkRed);
-			vectorClassFormat.setForeground(Qt::gray);
-			vectorMembersFormat.setForeground(Qt::darkCyan);
+			globalClassFormat.setForeground(Qt::gray);
+			objectMembersFormat.setForeground(Qt::darkCyan);
 			singleLineCommentFormat.setForeground(Qt::darkGreen);
 			multiLineCommentFormat.setForeground(Qt::darkGreen);
+			globalPropertyFormat.setForeground(Qt::darkCyan);
 			break;
 	}
 }

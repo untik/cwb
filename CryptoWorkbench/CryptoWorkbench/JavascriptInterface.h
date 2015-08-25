@@ -11,7 +11,6 @@ class Isolate;
 }
 
 
-
 ////////////////////////////////////////////////////////////////////////////////////
 ///
 /// Class wrapping interface for v8 javascript engine
@@ -30,7 +29,7 @@ public:
 	void testV8();
 
 	// Evaluate provided script and return the result as string
-	QString evaluate(const QString& scriptText, const QString& inputText = QString());
+	QString evaluate(const QString& scriptText, const QString& inputText = QString(), const QString& outputText = QString());
 
 signals:
 	void error(const QString& errorString);
