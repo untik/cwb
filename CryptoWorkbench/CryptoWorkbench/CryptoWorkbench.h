@@ -22,7 +22,9 @@ private:
 	QWidget* createLeftEditor(QWidget* parent);
 	QWidget* createRightEditor(QWidget* parent);
 	QWidget* createCodeEditor(QWidget* parent);
-	void updateScriptLabel();
+	QWidget* createHelpViewer(QWidget* parent);
+	void loadDefaultFiles();
+	void saveActiveScript();
 
 private slots:
 	void scriptError(const QString& errorString);
@@ -31,6 +33,7 @@ private slots:
 	void openClicked();
 	void saveAsClicked();
 	void runClicked();
+	void helpClicked();
 	void codeChanged();
 
 private:
@@ -43,6 +46,7 @@ private:
 	CodeEditor* consoleEditor;
 	QString currentFileName;
 	bool isCodeChanged;
+	QWidget* helpWidget;
 };
 
 #endif // CRYPTOWORKBENCH_H

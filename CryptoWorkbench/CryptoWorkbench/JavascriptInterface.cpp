@@ -25,6 +25,13 @@ QString stringValue(Local<Value> obj)
 	return QString::fromUtf8(*objStr, objStr.length());
 }
 
+int intValue(Local<Value> obj)
+{
+	if (obj->IsInt32())
+		return obj->Int32Value();
+	return -1;
+}
+
 namespace Callback
 {
 	using namespace v8;
@@ -46,6 +53,20 @@ namespace Callback
 		HandleScope scope(args.GetIsolate());
 		AlgorithmsCrypto* p = reinterpret_cast<AlgorithmsCrypto*>(Local<External>::Cast(args.Data())->Value());
 		QString result = p->replaceLetters(stringValue(args[0]), stringValue(args[1]), stringValue(args[2]), true);
+		args.GetReturnValue().Set(String::NewFromUtf8(args.GetIsolate(), result.toUtf8()));
+	}
+
+	void ngramFrequency(const FunctionCallbackInfo<Value>& args)
+	{
+		if (args.Length() < 2)
+			return;
+		HandleScope scope(args.GetIsolate());
+		AlgorithmsCrypto* p = reinterpret_cast<AlgorithmsCrypto*>(Local<External>::Cast(args.Data())->Value());
+		QString result;
+		if (args.Length() == 2)
+			result = p->ngramFrequency(stringValue(args[0]), intValue(args[1]));
+		else
+			result = p->ngramFrequency(stringValue(args[0]), intValue(args[1]), intValue(args[2]));
 		args.GetReturnValue().Set(String::NewFromUtf8(args.GetIsolate(), result.toUtf8()));
 	}
 }
@@ -154,6 +175,7 @@ QString JavascriptInterface::evaluate(const QString& scriptText, const QString& 
 
 	DEFINE_FUNCTION(rot13);
 	DEFINE_FUNCTION(replaceLetters);
+	DEFINE_FUNCTION(ngramFrequency);
 
 	//cryptoObject->Set(String::NewFromUtf8(isolate, "rot13"), FunctionTemplate::New(isolate, Callback::rot13, External::New(isolate, algorithmsCrypto.data())));
 	//cryptoObject->Set(String::NewFromUtf8(isolate, "replaceLetters"), FunctionTemplate::New(isolate, Callback::replaceLetters, External::New(isolate, algorithmsCrypto.data())));

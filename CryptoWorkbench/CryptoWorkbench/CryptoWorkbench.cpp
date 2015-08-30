@@ -13,21 +13,23 @@
 #include <QDebug>
 
 CryptoWorkbench::CryptoWorkbench(QWidget *parent)
-	: isCodeChanged(false), QMainWindow(parent)
+	: isCodeChanged(false), helpWidget(NULL), QMainWindow(parent)
 {
 	ui.setupUi(this);
 	createUi();
+	loadDefaultFiles();
 
 	js = new JavascriptInterface(this);
 	connect(js, &JavascriptInterface::error, this, &CryptoWorkbench::scriptError);
 
 	//js->testV8();
 	//qDebug() << "Result:" << js->evaluate("var a = 50; function add(x,y) { return x + y; }; add(a,10) + 10;");
-	codeEditor->setPlainText("var a = 50; \nfunction add(x,y) { return x + y; }; \nadd(a,10) + 10;");
+	//codeEditor->setPlainText("var a = 50; \nfunction add(x,y) { return x + y; }; \nadd(a,10) + 10;");
 }
 
 CryptoWorkbench::~CryptoWorkbench()
 {
+	saveActiveScript();
 }
 
 void CryptoWorkbench::createUi()
@@ -61,6 +63,12 @@ void CryptoWorkbench::createUi()
 
 	QShortcut* uncommentShortcut = new QShortcut(QKeySequence("Ctrl+U"), this);
 	connect(uncommentShortcut, &QShortcut::activated, this, &CryptoWorkbench::shortcutActivatedUncomment);
+
+	QShortcut* runShortcut = new QShortcut(QKeySequence("Ctrl+R"), this);
+	connect(runShortcut, &QShortcut::activated, this, &CryptoWorkbench::runClicked);
+
+	QShortcut* helpShortcut = new QShortcut(QKeySequence("F1"), this);
+	connect(helpShortcut, &QShortcut::activated, this, &CryptoWorkbench::helpClicked);
 }
 
 QWidget* CryptoWorkbench::createLeftEditor(QWidget* parent)
@@ -97,8 +105,8 @@ QWidget* CryptoWorkbench::createCodeEditor(QWidget* parent)
 	QVBoxLayout* widgetLayout = new QVBoxLayout(widget);
 	QHBoxLayout* toolbarLayout = new QHBoxLayout(widget);
 
-	codeEditorLabel = new QLabel("Script", widget);
-	toolbarLayout->addWidget(codeEditorLabel);
+	//codeEditorLabel = new QLabel("Script", widget);
+	//toolbarLayout->addWidget(codeEditorLabel);
 
 	QPushButton* buttonOpenScript = new QPushButton("&Open...", widget);
 	buttonOpenScript->setMinimumHeight(30);
@@ -109,6 +117,11 @@ QWidget* CryptoWorkbench::createCodeEditor(QWidget* parent)
 	buttonSaveAsScript->setMinimumHeight(30);
 	connect(buttonSaveAsScript, &QPushButton::clicked, this, &CryptoWorkbench::saveAsClicked);
 	toolbarLayout->addWidget(buttonSaveAsScript);
+
+	QPushButton* buttonHelp = new QPushButton("&Help", widget);
+	buttonHelp->setMinimumHeight(30);
+	connect(buttonHelp, &QPushButton::clicked, this, &CryptoWorkbench::helpClicked);
+	toolbarLayout->addWidget(buttonHelp);
 
 	QPushButton* buttonRunScript = new QPushButton("&Run", widget);
 	buttonRunScript->setMinimumHeight(30);
@@ -125,15 +138,40 @@ QWidget* CryptoWorkbench::createCodeEditor(QWidget* parent)
 	return widget;
 }
 
-void CryptoWorkbench::updateScriptLabel()
+QWidget* CryptoWorkbench::createHelpViewer(QWidget* parent)
 {
-	if (currentFileName.isEmpty()) {
-		codeEditorLabel->setText("Script");
-	} else {
-		if (isCodeChanged)
-			codeEditorLabel->setText("Script (" + currentFileName + "*)");
-		else
-			codeEditorLabel->setText("Script (" + currentFileName + ")");
+	QWidget* widget = new QWidget(parent);
+
+	//helpWidget = new QWidget(this);
+	//QVBoxLayout* layout = new QVBoxLayout(helpWidget);
+
+	//QTextEdit* helpEdit = new QTextEdit(helpWidget);
+	//helpEdit->setReadOnly(true);
+
+	//QFile helpFile("../data/help.html");
+	//if (helpFile.open(QFile::ReadOnly | QFile::Text))
+	//	helpEdit->setHtml(QString::fromUtf8(helpFile.readAll()));
+
+	//layout->addWidget(helpEdit);
+	return widget;
+}
+
+void CryptoWorkbench::loadDefaultFiles()
+{
+	QFile codeFile("../data/code.cwb");
+	if (codeFile.open(QFile::ReadOnly | QFile::Text))
+		codeEditor->setPlainText(QString::fromUtf8(codeFile.readAll()));
+
+	QFile leftFile("../data/left.txt");
+	if (leftFile.open(QFile::ReadOnly | QFile::Text))
+		leftEditor->setPlainText(QString::fromUtf8(leftFile.readAll()));
+}
+
+void CryptoWorkbench::saveActiveScript()
+{
+	QFile codeFile("../data/code.cwb");
+	if (codeFile.open(QFile::WriteOnly | QFile::Truncate | QFile::Text)) {
+		codeFile.write(codeEditor->toPlainText().toUtf8());
 	}
 }
 
@@ -215,7 +253,7 @@ void CryptoWorkbench::shortcutActivatedUncomment()
 
 void CryptoWorkbench::openClicked()
 {
-	QString fileName = QFileDialog::getOpenFileName(this, tr("Open Script"), "../scripts/", tr("Script Files (*.js)"));
+	QString fileName = QFileDialog::getOpenFileName(this, tr("Open Script"), "../scripts/", tr("Script Files (*.cwb)"));
 	QFile file(fileName);
 	if (file.open(QIODevice::ReadOnly | QIODevice::Text)) {
 		QByteArray data = file.readAll();
@@ -224,12 +262,11 @@ void CryptoWorkbench::openClicked()
 
 	currentFileName = QFileInfo(fileName).fileName();
 	isCodeChanged = false;
-	updateScriptLabel();
 }
 
 void CryptoWorkbench::saveAsClicked()
 {
-	QString fileName = QFileDialog::getSaveFileName(this, tr("Save Script"), "../scripts/", tr("Script Files (*.js)"));
+	QString fileName = QFileDialog::getSaveFileName(this, tr("Save Script"), "../scripts/", tr("Script Files (*.cwb)"));
 	QFile file(fileName);
 	if (file.open(QIODevice::WriteOnly | QIODevice::Text | QIODevice::Truncate)) {
 		file.write(codeEditor->toPlainText().toUtf8());
@@ -237,7 +274,6 @@ void CryptoWorkbench::saveAsClicked()
 
 	currentFileName = QFileInfo(fileName).fileName();
 	isCodeChanged = false;
-	updateScriptLabel();
 }
 
 void CryptoWorkbench::runClicked()
@@ -255,8 +291,38 @@ void CryptoWorkbench::runClicked()
 	rightEditor->appendPlainText(result);
 }
 
+void CryptoWorkbench::helpClicked()
+{
+	if (helpWidget == NULL) {
+		helpWidget = new QWidget();
+		QVBoxLayout* layout = new QVBoxLayout(helpWidget);
+
+		QTextEdit* helpEdit = new QTextEdit(helpWidget);
+		helpEdit->setReadOnly(true);
+
+		QShortcut* closeShortcut1 = new QShortcut(QKeySequence("F1"), helpWidget);
+		connect(closeShortcut1, &QShortcut::activated, helpWidget, &QWidget::hide);
+
+		QShortcut* closeShortcut2 = new QShortcut(QKeySequence("Esc"), helpWidget);
+		connect(closeShortcut2, &QShortcut::activated, helpWidget, &QWidget::hide);
+
+		QFile helpFile("../data/help.html");
+		if (helpFile.open(QFile::ReadOnly | QFile::Text))
+			helpEdit->setHtml(QString::fromUtf8(helpFile.readAll()));
+
+		layout->addWidget(helpEdit);
+	}
+
+	if (helpWidget->isVisible()) {
+		helpWidget->hide();
+	} else {
+		QSize helpSize = helpWidget->size();
+		helpWidget->show();
+		helpWidget->resize(helpSize);
+	}
+}
+
 void CryptoWorkbench::codeChanged()
 {
 	isCodeChanged = true;
-	updateScriptLabel();
 }

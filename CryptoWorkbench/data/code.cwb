@@ -1,0 +1,1 @@
+output = Crypto.ngramFrequency(input, 1, 5)
