@@ -1,1 +1,1 @@
-output = Crypto.ngramFrequency(input, 1, 5)
+output = Crypto.wordFrequency(input, 3);

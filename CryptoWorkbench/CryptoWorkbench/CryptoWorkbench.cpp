@@ -23,8 +23,6 @@ CryptoWorkbench::CryptoWorkbench(QWidget *parent)
 	connect(js, &JavascriptInterface::error, this, &CryptoWorkbench::scriptError);
 
 	//js->testV8();
-	//qDebug() << "Result:" << js->evaluate("var a = 50; function add(x,y) { return x + y; }; add(a,10) + 10;");
-	//codeEditor->setPlainText("var a = 50; \nfunction add(x,y) { return x + y; }; \nadd(a,10) + 10;");
 }
 
 CryptoWorkbench::~CryptoWorkbench()
@@ -159,8 +157,10 @@ QWidget* CryptoWorkbench::createHelpViewer(QWidget* parent)
 void CryptoWorkbench::loadDefaultFiles()
 {
 	QFile codeFile("../data/code.cwb");
-	if (codeFile.open(QFile::ReadOnly | QFile::Text))
+	if (codeFile.open(QFile::ReadOnly | QFile::Text)) {
 		codeEditor->setPlainText(QString::fromUtf8(codeFile.readAll()));
+		isCodeChanged = false;
+	}
 
 	QFile leftFile("../data/left.txt");
 	if (leftFile.open(QFile::ReadOnly | QFile::Text))
@@ -172,6 +172,7 @@ void CryptoWorkbench::saveActiveScript()
 	QFile codeFile("../data/code.cwb");
 	if (codeFile.open(QFile::WriteOnly | QFile::Truncate | QFile::Text)) {
 		codeFile.write(codeEditor->toPlainText().toUtf8());
+		isCodeChanged = false;
 	}
 }
 
@@ -278,6 +279,9 @@ void CryptoWorkbench::saveAsClicked()
 
 void CryptoWorkbench::runClicked()
 {
+	if (isCodeChanged)
+		saveActiveScript();
+
 	QString script = codeEditor->toPlainText();
 	QString input = leftEditor->toPlainText();
 	QString output = rightEditor->toPlainText();
@@ -326,3 +330,4 @@ void CryptoWorkbench::codeChanged()
 {
 	isCodeChanged = true;
 }
+

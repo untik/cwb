@@ -36,13 +36,17 @@ namespace Callback
 {
 	using namespace v8;
 
-	void rot13(const FunctionCallbackInfo<Value>& args)
+	void rotateAlphabet(const FunctionCallbackInfo<Value>& args)
 	{
 		if (args.Length() < 1)
 			return;
 		HandleScope scope(args.GetIsolate());
 		AlgorithmsCrypto* p = reinterpret_cast<AlgorithmsCrypto*>(Local<External>::Cast(args.Data())->Value());
-		QString result = p->rot13(stringValue(args[0]));
+		QString result;
+		if (args.Length() == 1)
+			result = p->rotateAlphabet(stringValue(args[0]));
+		else
+			result = p->rotateAlphabet(stringValue(args[0]), intValue(args[1]));
 		args.GetReturnValue().Set(String::NewFromUtf8(args.GetIsolate(), result.toUtf8()));
 	}
 
@@ -67,6 +71,88 @@ namespace Callback
 			result = p->ngramFrequency(stringValue(args[0]), intValue(args[1]));
 		else
 			result = p->ngramFrequency(stringValue(args[0]), intValue(args[1]), intValue(args[2]));
+		args.GetReturnValue().Set(String::NewFromUtf8(args.GetIsolate(), result.toUtf8()));
+	}
+
+	void wordFrequency(const FunctionCallbackInfo<Value>& args)
+	{
+		if (args.Length() < 1)
+			return;
+		HandleScope scope(args.GetIsolate());
+		AlgorithmsCrypto* p = reinterpret_cast<AlgorithmsCrypto*>(Local<External>::Cast(args.Data())->Value());
+		QString result;
+		if (args.Length() == 1)
+			result = p->wordFrequency(stringValue(args[0]));
+		else
+			result = p->wordFrequency(stringValue(args[0]), intValue(args[1]));
+		args.GetReturnValue().Set(String::NewFromUtf8(args.GetIsolate(), result.toUtf8()));
+	}
+
+	void hash(const FunctionCallbackInfo<Value>& args)
+	{
+		if (args.Length() < 2)
+			return;
+		HandleScope scope(args.GetIsolate());
+		AlgorithmsCrypto* p = reinterpret_cast<AlgorithmsCrypto*>(Local<External>::Cast(args.Data())->Value());
+		QString result = p->hash(stringValue(args[0]), intValue(args[1]));
+		args.GetReturnValue().Set(String::NewFromUtf8(args.GetIsolate(), result.toUtf8()));
+	}
+
+	void decodeHex(const FunctionCallbackInfo<Value>& args)
+	{
+		if (args.Length() < 1)
+			return;
+		HandleScope scope(args.GetIsolate());
+		AlgorithmsCrypto* p = reinterpret_cast<AlgorithmsCrypto*>(Local<External>::Cast(args.Data())->Value());
+		QString result = p->decodeHex(stringValue(args[0]));
+		args.GetReturnValue().Set(String::NewFromUtf8(args.GetIsolate(), result.toUtf8()));
+	}
+
+	void hex(const FunctionCallbackInfo<Value>& args)
+	{
+		if (args.Length() < 1)
+			return;
+		HandleScope scope(args.GetIsolate());
+		AlgorithmsCrypto* p = reinterpret_cast<AlgorithmsCrypto*>(Local<External>::Cast(args.Data())->Value());
+		QString result;
+		if (args.Length() == 1)
+			result = p->hex(stringValue(args[0]));
+		else
+			result = p->hex(stringValue(args[0]), intValue(args[1]));
+		args.GetReturnValue().Set(String::NewFromUtf8(args.GetIsolate(), result.toUtf8()));
+	}
+
+	void decodeBase64(const FunctionCallbackInfo<Value>& args)
+	{
+		if (args.Length() < 1)
+			return;
+		HandleScope scope(args.GetIsolate());
+		AlgorithmsCrypto* p = reinterpret_cast<AlgorithmsCrypto*>(Local<External>::Cast(args.Data())->Value());
+		QString result = p->decodeBase64(stringValue(args[0]));
+		args.GetReturnValue().Set(String::NewFromUtf8(args.GetIsolate(), result.toUtf8()));
+	}
+
+	void base64(const FunctionCallbackInfo<Value>& args)
+	{
+		if (args.Length() < 1)
+			return;
+		HandleScope scope(args.GetIsolate());
+		AlgorithmsCrypto* p = reinterpret_cast<AlgorithmsCrypto*>(Local<External>::Cast(args.Data())->Value());
+		QString result = p->base64(stringValue(args[0]));
+		args.GetReturnValue().Set(String::NewFromUtf8(args.GetIsolate(), result.toUtf8()));
+	}
+
+	void printable(const FunctionCallbackInfo<Value>& args)
+	{
+		if (args.Length() < 1)
+			return;
+		HandleScope scope(args.GetIsolate());
+		AlgorithmsCrypto* p = reinterpret_cast<AlgorithmsCrypto*>(Local<External>::Cast(args.Data())->Value());
+		QString result;
+		if (args.Length() == 1)
+			result = p->printable(stringValue(args[0]));
+		else
+			result = p->printable(stringValue(args[0]), stringValue(args[1]));
 		args.GetReturnValue().Set(String::NewFromUtf8(args.GetIsolate(), result.toUtf8()));
 	}
 }
@@ -173,9 +259,16 @@ QString JavascriptInterface::evaluate(const QString& scriptText, const QString& 
 	QScopedPointer<AlgorithmsCrypto> algorithmsCrypto(new AlgorithmsCrypto());
 	Local<ObjectTemplate> cryptoObject = ObjectTemplate::New(isolate);
 
-	DEFINE_FUNCTION(rot13);
+	DEFINE_FUNCTION(rotateAlphabet);
 	DEFINE_FUNCTION(replaceLetters);
 	DEFINE_FUNCTION(ngramFrequency);
+	DEFINE_FUNCTION(wordFrequency);
+	DEFINE_FUNCTION(hash);
+	DEFINE_FUNCTION(decodeHex);
+	DEFINE_FUNCTION(hex);
+	DEFINE_FUNCTION(decodeBase64);
+	DEFINE_FUNCTION(base64);
+	DEFINE_FUNCTION(printable);
 
 	//cryptoObject->Set(String::NewFromUtf8(isolate, "rot13"), FunctionTemplate::New(isolate, Callback::rot13, External::New(isolate, algorithmsCrypto.data())));
 	//cryptoObject->Set(String::NewFromUtf8(isolate, "replaceLetters"), FunctionTemplate::New(isolate, Callback::replaceLetters, External::New(isolate, algorithmsCrypto.data())));
