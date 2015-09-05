@@ -19,10 +19,7 @@ CryptoWorkbench::CryptoWorkbench(QWidget *parent)
 	createUi();
 	loadDefaultFiles();
 
-	js = new JavascriptInterface(this);
-	connect(js, &JavascriptInterface::error, this, &CryptoWorkbench::scriptError);
-
-	//js->testV8();
+	js = new JavascriptInterface("../data/corelib.js", this);
 }
 
 CryptoWorkbench::~CryptoWorkbench()
@@ -36,13 +33,9 @@ void CryptoWorkbench::createUi()
 
 	QSplitter* splitterV = new QSplitter(Qt::Vertical, ui.centralWidget);
 
-	QSplitter* splitterH = new QSplitter(Qt::Horizontal, splitterV);
-	splitterH->addWidget(createLeftEditor(splitterH));
-	splitterH->addWidget(createRightEditor(splitterH));
-
-	splitterV->addWidget(splitterH);
+	splitterV->addWidget(createWorkspaceEditor(splitterV));
 	splitterV->addWidget(createCodeEditor(splitterV));
-	splitterV->setSizes(QList<int>() << 400 << 200);
+	splitterV->setSizes(QList<int>() << 400 << 300);
 
 	mainHorizontalLayout->addWidget(splitterV);
 
@@ -53,8 +46,7 @@ void CryptoWorkbench::createUi()
 	codeEditor->setFont(font);
 	codeEditor->setTabSize(4);
 
-	leftEditor->setFont(font);
-	rightEditor->setFont(font);
+	workspaceEditor->setFont(font);
 
 	QShortcut* commentShortcut = new QShortcut(QKeySequence("Ctrl+K"), this);
 	connect(commentShortcut, &QShortcut::activated, this, &CryptoWorkbench::shortcutActivatedComment);
@@ -69,31 +61,17 @@ void CryptoWorkbench::createUi()
 	connect(helpShortcut, &QShortcut::activated, this, &CryptoWorkbench::helpClicked);
 }
 
-QWidget* CryptoWorkbench::createLeftEditor(QWidget* parent)
+QWidget* CryptoWorkbench::createWorkspaceEditor(QWidget* parent)
 {
 	QWidget* widget = new QWidget(parent);
 	QVBoxLayout* widgetLayout = new QVBoxLayout(widget);
-	QLabel* label = new QLabel("Left (Source)", widget);
+	QLabel* label = new QLabel("Workspace", widget);
 
-	leftEditor = new CodeEditor(widget);
-
-	widgetLayout->setMargin(0);
-	widgetLayout->addWidget(label);
-	widgetLayout->addWidget(leftEditor);
-	return widget;
-}
-
-QWidget* CryptoWorkbench::createRightEditor(QWidget* parent)
-{
-	QWidget* widget = new QWidget(parent);
-	QVBoxLayout* widgetLayout = new QVBoxLayout(widget);
-	QLabel* label = new QLabel("Right (Output)", widget);
-
-	rightEditor = new CodeEditor(widget);
+	workspaceEditor = new CodeEditor(widget);
 
 	widgetLayout->setMargin(0);
 	widgetLayout->addWidget(label);
-	widgetLayout->addWidget(rightEditor);
+	widgetLayout->addWidget(workspaceEditor);
 	return widget;
 }
 
@@ -156,30 +134,24 @@ QWidget* CryptoWorkbench::createHelpViewer(QWidget* parent)
 
 void CryptoWorkbench::loadDefaultFiles()
 {
-	QFile codeFile("../data/code.cwb");
+	QFile codeFile("../data/current.js");
 	if (codeFile.open(QFile::ReadOnly | QFile::Text)) {
 		codeEditor->setPlainText(QString::fromUtf8(codeFile.readAll()));
 		isCodeChanged = false;
 	}
 
-	QFile leftFile("../data/left.txt");
-	if (leftFile.open(QFile::ReadOnly | QFile::Text))
-		leftEditor->setPlainText(QString::fromUtf8(leftFile.readAll()));
+	//QFile leftFile("../data/left.txt");
+	//if (leftFile.open(QFile::ReadOnly | QFile::Text))
+	//	leftEditor->setPlainText(QString::fromUtf8(leftFile.readAll()));
 }
 
 void CryptoWorkbench::saveActiveScript()
 {
-	QFile codeFile("../data/code.cwb");
+	QFile codeFile("../data/current.js");
 	if (codeFile.open(QFile::WriteOnly | QFile::Truncate | QFile::Text)) {
 		codeFile.write(codeEditor->toPlainText().toUtf8());
 		isCodeChanged = false;
 	}
-}
-
-void CryptoWorkbench::scriptError(const QString& errorString)
-{
-	rightEditor->appendPlainText(errorString + "\n");
-	//qDebug() << "CryptoWorkbench::scriptError" << errorString;
 }
 
 void CryptoWorkbench::shortcutActivatedComment()
@@ -283,16 +255,16 @@ void CryptoWorkbench::runClicked()
 		saveActiveScript();
 
 	QString script = codeEditor->toPlainText();
-	QString input = leftEditor->toPlainText();
-	QString output = rightEditor->toPlainText();
-	rightEditor->setPlainText("");
+	QString workspaceText = workspaceEditor->toPlainText();
+
+	workspaceEditor->setPlainText("");
 
 	QElapsedTimer timer;
 	timer.start();
-	QString result = js->evaluate(script, input, output);
+	ScriptResult result = js->evaluate(script, workspaceText);
 	ui.statusBar->showMessage(QString("Script runtime: %1 ms").arg(timer.elapsed()));
 
-	rightEditor->appendPlainText(result);
+	workspaceEditor->appendPlainText(result.data());
 }
 
 void CryptoWorkbench::helpClicked()

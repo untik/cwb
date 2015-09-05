@@ -19,15 +19,13 @@ public:
 
 private:
 	void createUi();
-	QWidget* createLeftEditor(QWidget* parent);
-	QWidget* createRightEditor(QWidget* parent);
+	QWidget* createWorkspaceEditor(QWidget* parent);
 	QWidget* createCodeEditor(QWidget* parent);
 	QWidget* createHelpViewer(QWidget* parent);
 	void loadDefaultFiles();
 	void saveActiveScript();
 
 private slots:
-	void scriptError(const QString& errorString);
 	void shortcutActivatedComment();
 	void shortcutActivatedUncomment();
 	void openClicked();
@@ -39,8 +37,7 @@ private slots:
 private:
 	Ui::CryptoWorkbenchClass ui;
 	JavascriptInterface* js;
-	CodeEditor* leftEditor;
-	CodeEditor* rightEditor;
+	CodeEditor* workspaceEditor;
 	CodeEditor* codeEditor;
 	QLabel* codeEditorLabel;
 	CodeEditor* consoleEditor;

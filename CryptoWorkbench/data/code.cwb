@@ -1,1 +1,0 @@
-output = Crypto.wordFrequency(input, 3);

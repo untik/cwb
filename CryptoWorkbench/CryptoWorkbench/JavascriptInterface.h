@@ -3,47 +3,28 @@
 
 #include <QString>
 #include <QObject>
+#include "ScriptResult.h"
 
-namespace v8 {
-class TryCatch;
-class Platform;
-class Isolate;
-}
-
+class WorkbenchEngine;
 
 ////////////////////////////////////////////////////////////////////////////////////
 ///
-/// Class wrapping interface for v8 javascript engine
+/// Class wrapping WorkbenchEngine
 ///
 ////////////////////////////////////////////////////////////////////////////////////
 class JavascriptInterface : public QObject
 {
 	Q_OBJECT
-	class ArrayBufferAllocator;
 
 public:
-	JavascriptInterface(QObject* parent = NULL);
+	JavascriptInterface(const QString& coreLibraryPath, QObject* parent = NULL);
 	~JavascriptInterface();
 
-	// Execute v8 HelloWorld example
-	void testV8();
-
-	// Evaluate provided script and return the result as string
-	QString evaluate(const QString& scriptText, const QString& inputText = QString(), const QString& outputText = QString());
-
-signals:
-	void error(const QString& errorString);
+	// Run javascript
+	ScriptResult evaluate(const QString& scriptText, const QString& workspaceText = QString());
 
 private:
-	void initializeV8();
-	void shutdownV8();
-	void reportException(v8::TryCatch* trycatch);
-	QString buildExceptionReport(v8::TryCatch* trycatch);
-
-private:
-	v8::Platform* platform;
-	v8::Isolate* isolate;
-	ArrayBufferAllocator* alocator;
+	WorkbenchEngine* engine;
 };
 
 #endif // JAVASCRIPTINTERFACE_H

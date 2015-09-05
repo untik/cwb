@@ -112,6 +112,7 @@
     <ClCompile Include="JavascriptInterface.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="ScriptHighlighter.cpp" />
+    <ClCompile Include="WorkbenchEngine.cpp" />
   </ItemGroup>
   <ItemGroup>
     <CustomBuild Include="CryptoWorkbench.h">
@@ -138,6 +139,8 @@
     </CustomBuild>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="ScriptResult.h" />
+    <ClInclude Include="WorkbenchEngine.h" />
     <CustomBuild Include="AlgorithmsCrypto.h">
       <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(QTDIR)\bin\moc.exe;%(FullPath)</AdditionalInputs>
       <Message Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Moc%27ing AlgorithmsCrypto.h...</Message>

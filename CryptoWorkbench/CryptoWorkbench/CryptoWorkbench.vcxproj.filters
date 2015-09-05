@@ -76,6 +76,9 @@
     <ClCompile Include="GeneratedFiles\Release\moc_AlgorithmsCrypto.cpp">
       <Filter>Generated Files\Release</Filter>
     </ClCompile>
+    <ClCompile Include="WorkbenchEngine.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <CustomBuild Include="CryptoWorkbench.ui">
@@ -102,6 +105,12 @@
       <Filter>Generated Files</Filter>
     </ClInclude>
     <ClInclude Include="ScriptHighlighter.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="WorkbenchEngine.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ScriptResult.h">
       <Filter>Source Files</Filter>
     </ClInclude>
   </ItemGroup>
