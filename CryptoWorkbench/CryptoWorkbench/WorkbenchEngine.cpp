@@ -142,7 +142,9 @@ Local<Context> WorkbenchEngine::createGlobalContext(const QString& workspaceText
 	ModuleTools::registerTemplates(isolate, globalObject);
 	ModuleByteArray::registerTemplates(isolate, globalObject);
 
-	return handle_scope.Escape(Context::New(isolate, NULL, globalObject));
+	// Create context
+	Local<Context> context = Context::New(isolate, NULL, globalObject);
+	return handle_scope.Escape(context);
 }
 
 QString WorkbenchEngine::buildExceptionReport(TryCatch* trycatch)
@@ -245,10 +247,7 @@ void readFileCallback(const FunctionCallbackInfo<Value>& args)
 	}
 
 	QByteArray fileContent = file.readAll();
-	Local<ArrayBuffer> buffer = ArrayBuffer::New(args.GetIsolate(), fileContent.size());
-	memcpy(buffer->GetContents().Data(), fileContent.constData(), fileContent.size());
-
-	args.GetReturnValue().Set(buffer);
+	args.GetReturnValue().Set(ModuleByteArray::wrapByteArray(args.GetIsolate(), fileContent));
 }
 
 MaybeLocal<Value> executeString(WorkbenchEngine* workbenchEngine, Isolate* isolate, Local<String> source, Local<Value> name)

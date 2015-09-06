@@ -28,26 +28,44 @@ ScriptHighlighter::ScriptHighlighter(QTextDocument* parent, StyleType style)
 	re = QRegularExpression("\".*\"");
 	highlightingRules.append(HighlightingRule(re, quotationFormat));
 
-	re = QRegularExpression("\\binput\\b");
+	re = QRegularExpression("\\beorkspace\\b");
 	highlightingRules.append(HighlightingRule(re, globalPropertyFormat));
 
-	re = QRegularExpression("\\boutput\\b");
-	highlightingRules.append(HighlightingRule(re, globalPropertyFormat));
-
-	re = QRegularExpression("\\bCrypto\\b");
-	highlightingRules.append(HighlightingRule(re, globalClassFormat));
+	//re = QRegularExpression("\\boutput\\b");
+	//highlightingRules.append(HighlightingRule(re, globalPropertyFormat));
 
 	QStringList exceptions;
 	exceptions << "destroyed" << "objectNameChanged" << "deleteLater" << "_q_reregisterTimers";
 
-	int count = AlgorithmsCrypto::staticMetaObject.methodCount();
-	for (int i = 0; i < count; i++) {
-		QString name = AlgorithmsCrypto::staticMetaObject.method(i).name();
-		if (!exceptions.contains(name)) {
-			re = QRegularExpression("\\bCrypto\\." + name + "\\b");
-			highlightingRules.append(HighlightingRule(re, objectMembersFormat, 7));
-		}
-	}
+	//int count = AlgorithmsCrypto::staticMetaObject.methodCount();
+	//for (int i = 0; i < count; i++) {
+	//	QString name = AlgorithmsCrypto::staticMetaObject.method(i).name();
+	//	if (!exceptions.contains(name)) {
+	//		re = QRegularExpression("\\bCrypto\\." + name + "\\b");
+	//		highlightingRules.append(HighlightingRule(re, objectMembersFormat, 7));
+	//	}
+	//}
+
+	re = QRegularExpression("\\bTools\\b");
+	highlightingRules.append(HighlightingRule(re, globalClassFormat));
+
+	re = QRegularExpression("\\bTools\\.rotateAlphabet\\b");
+	highlightingRules.append(HighlightingRule(re, objectMembersFormat, 6));
+	re = QRegularExpression("\\bTools\\.replaceLetters\\b");
+	highlightingRules.append(HighlightingRule(re, objectMembersFormat, 6));
+	re = QRegularExpression("\\bTools\\.ngramFrequency\\b");
+	highlightingRules.append(HighlightingRule(re, objectMembersFormat, 6));
+	re = QRegularExpression("\\bTools\\.wordFrequency\\b");
+	highlightingRules.append(HighlightingRule(re, objectMembersFormat, 6));
+	re = QRegularExpression("\\bTools\\.rot13\\b");
+	highlightingRules.append(HighlightingRule(re, objectMembersFormat, 6));
+
+	re = QRegularExpression("\\bFile\\b");
+	highlightingRules.append(HighlightingRule(re, globalClassFormat));
+
+	re = QRegularExpression("\\bFile\\.readFile\\b");
+	highlightingRules.append(HighlightingRule(re, objectMembersFormat, 5));
+
 
 	re = QRegularExpression("//[^\n]*");
 	highlightingRules.append(HighlightingRule(re, singleLineCommentFormat));

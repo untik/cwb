@@ -1,44 +1,24 @@
 #include "ModuleByteArray.h"
 #include "Utility.h"
+#include <QCryptographicHash>
 #include <QDebug>
 
 using namespace v8;
 
-//static Global<ObjectTemplate> ByteArrayTemplate;
+static Global<ObjectTemplate> ByteArrayTemplate;
 
-//void deleteByteArrayCallback(const WeakCallbackData<Object, QByteArray>& callbackInfo)
 
-void deleteByteArrayCallback(const WeakCallbackData<Object, QByteArray>& data)
+QByteArray byteArrayFromString(const QString& source, int format)
 {
-	qDebug() << "DELETE QByteArray";
-
-
-	//Point *point = static_cast<Point *> (parameter);
-
-	////remove it from the map
-	//jsPoints.erase(point);
-
-	////javascript no longer uses the object
-	////if we are certain C++ isn't using it, we could "Let JavaScript destroy it":
-	//delete point;
-
-	////clear the reference to it
-	//object.Dispose();
-	//object.Clear();
-}
-
-QByteArray* constructByteArrayFromString(const FunctionCallbackInfo<Value>& args)
-{
-	// TODO - parse input formats
-
-	QString source = Utility::toString(args[0]);
-	return new QByteArray(source.toLatin1());
-}
-
-QByteArray* constructByteArrayFromArrayBuffer(const FunctionCallbackInfo<Value>& args)
-{
-	QByteArray source = Utility::toByteArray(args[0]);
-	return new QByteArray(source);
+	switch (format) {
+		case 1:
+			return source.toUtf8();
+		case 2:
+			return QByteArray::fromHex(source.toLatin1());
+		case 3:
+			return QByteArray::fromBase64(source.toLatin1());
+	}
+	return source.toLatin1();
 }
 
 void constructByteArray(const FunctionCallbackInfo<Value>& args)
@@ -58,7 +38,14 @@ void constructByteArray(const FunctionCallbackInfo<Value>& args)
 		data = Utility::toByteArray(args[0]);
 	}
 	else if (args[0]->IsString()) {
-		data = Utility::toString(args[0]).toLatin1();
+		int format = 0;
+		if (args.Length() >= 2 && args[1]->IsInt32())
+			format = args[1]->Int32Value();
+		if (format < 0 || format > 3) {
+			Utility::throwException(args.GetIsolate(), Utility::ExceptionInvalidArgumentValue);
+			return;
+		}
+		data = byteArrayFromString(Utility::toString(args[0]).toLatin1(), format);
 	}
 	else {
 		Utility::throwException(args.GetIsolate(), Utility::ExceptionInvalidArgumentType);
@@ -67,61 +54,139 @@ void constructByteArray(const FunctionCallbackInfo<Value>& args)
 
 	HandleScope handle_scope(args.GetIsolate());
 
-	Local<Object> wrapper = args.Holder();
-
-	wrapper->Set(String::NewFromUtf8(args.GetIsolate(), "buffer"), Utility::toV8ArrayBuffer(args.GetIsolate(), data));
-
 	// Return the constructed object
-	args.GetReturnValue().Set(wrapper);
-
-
-
-	//qDebug() << "NEW QByteArray";
-
-	//
-
-	//// Fetch the template for creating ByteArray wrappers.
-	////Local<ObjectTemplate> localTemplate = Local<ObjectTemplate>::New(args.GetIsolate(), ByteArrayTemplate);
-
-	//// Create an empty ByteArray wrapper.
-	////Local<Object> wrapper = localTemplate->NewInstance(args.GetIsolate()->GetCurrentContext()).ToLocalChecked();
-	//Local<Object> wrapper = args.Holder();
-
-	//// Wrap the raw C++ pointer in an External so it can be referenced from within JavaScript.
-	//Local<External> external = External::New(args.GetIsolate(), arrayPointer);
-
-	//// Store the pointer in the JavaScript wrapper.
-	//wrapper->SetInternalField(0, external);
-
-	//// Create persistent handle to wrapper object
-	//Persistent<Object> persistentWrapper(args.GetIsolate(), wrapper);
-	//persistentWrapper.SetWeak(arrayPointer, deleteByteArrayCallback);
-	//persistentWrapper.MarkIndependent();
-
-
-}
-
-QByteArray* unwrapByteArray(Local<Object> obj)
-{
-	Local<External> field = Local<External>::Cast(obj->GetInternalField(0));
-	void* ptr = field->Value();
-	return static_cast<QByteArray*>(ptr);
+	args.GetReturnValue().Set(ModuleByteArray::wrapByteArray(args.GetIsolate(), data));
 }
 
 void hex(const FunctionCallbackInfo<Value>& args)
 {
-	Local<Value> buffer = args.Holder()->Get(String::NewFromUtf8(args.GetIsolate(), "buffer"));
-	v8::ArrayBuffer::Contents c = Local<ArrayBuffer>::Cast(buffer)->GetContents();
-	QByteArray data(reinterpret_cast<const char*>(c.Data()), c.ByteLength());
+	QByteArray data = ModuleByteArray::unwrapByteArray(args.GetIsolate(), args.Holder());
 
-	//// Extract the C++ QByteArray object from the JavaScript wrapper.
-	//QByteArray* data2 = unwrapByteArray(args.Holder());
-	//if (data2 == NULL) {
-	//	qDebug() << "ByteArray.hex NULL pointer";
-	//	return;
-	//}
+	int format = 0;
+	if (args.Length() >= 1 && args[0]->IsInt32())
+		format = args[0]->Int32Value();
+	if (format < 0 || format > 2) {
+		Utility::throwException(args.GetIsolate(), Utility::ExceptionInvalidArgumentValue);
+		return;
+	}
 
-	args.GetReturnValue().Set(Utility::toV8String(args.GetIsolate(), QString::fromLatin1(data.toHex())));
+	QByteArray hexData = data.toHex();
+	QString result;
+
+	switch (format) {
+		case 1:
+			for (int i = 0; i < hexData.count(); i++) {
+				if (i > 0 && i % 2 == 0)
+					result.append(" ");
+				result.append(hexData.at(i));
+			}
+			break;
+
+		case 2:
+			// TODO - Show in columns
+			result = QString::fromLatin1(hexData);
+			break;
+
+		default:
+			result = QString::fromLatin1(hexData);
+			break;
+	}
+
+	args.GetReturnValue().Set(Utility::toV8String(args.GetIsolate(), result));
+}
+
+void base64(const FunctionCallbackInfo<Value>& args)
+{
+	QByteArray data = ModuleByteArray::unwrapByteArray(args.GetIsolate(), args.Holder());
+	args.GetReturnValue().Set(Utility::toV8String(args.GetIsolate(), QString::fromLatin1(data.toBase64())));
+}
+
+void hash(const FunctionCallbackInfo<Value>& args)
+{
+	if (args.Length() < 1) {
+		Utility::throwException(args.GetIsolate(), Utility::ExceptionInvalidArgumentCount);
+		return;
+	}
+	if (!args[0]->IsInt32()) {
+		Utility::throwException(args.GetIsolate(), Utility::ExceptionInvalidArgumentType);
+		return;
+	}
+
+	QByteArray input = ModuleByteArray::unwrapByteArray(args.GetIsolate(), args.Holder());
+	int algorithm = args[0]->Int32Value();
+
+	HandleScope handle_scope(args.GetIsolate());
+
+	QByteArray hashValue;
+	switch (algorithm) {
+		case QCryptographicHash::Md4:
+			hashValue = QCryptographicHash::hash(input, QCryptographicHash::Md4);
+			break;
+		case QCryptographicHash::Md5:
+			hashValue = QCryptographicHash::hash(input, QCryptographicHash::Md5);
+			break;
+		case QCryptographicHash::Sha1:
+			hashValue = QCryptographicHash::hash(input, QCryptographicHash::Sha1);
+			break;
+		case QCryptographicHash::Sha224:
+			hashValue = QCryptographicHash::hash(input, QCryptographicHash::Sha224);
+			break;
+		case QCryptographicHash::Sha256:
+			hashValue = QCryptographicHash::hash(input, QCryptographicHash::Sha256);
+			break;
+		case QCryptographicHash::Sha384:
+			hashValue = QCryptographicHash::hash(input, QCryptographicHash::Sha384);
+			break;
+		case QCryptographicHash::Sha512:
+			hashValue = QCryptographicHash::hash(input, QCryptographicHash::Sha512);
+			break;
+		case QCryptographicHash::Sha3_224:
+			hashValue = QCryptographicHash::hash(input, QCryptographicHash::Sha3_224);
+			break;
+		case QCryptographicHash::Sha3_256:
+			hashValue = QCryptographicHash::hash(input, QCryptographicHash::Sha3_256);
+			break;
+		case QCryptographicHash::Sha3_384:
+			hashValue = QCryptographicHash::hash(input, QCryptographicHash::Sha3_384);
+			break;
+		case QCryptographicHash::Sha3_512:
+			hashValue = QCryptographicHash::hash(input, QCryptographicHash::Sha3_512);
+			break;
+
+		default: {
+			Utility::throwException(args.GetIsolate(), Utility::ExceptionInvalidArgumentValue);
+			return;
+		}
+	}
+
+	args.GetReturnValue().Set(ModuleByteArray::wrapByteArray(args.GetIsolate(), hashValue));
+}
+
+void printable(const FunctionCallbackInfo<Value>& args)
+{
+	QByteArray data = ModuleByteArray::unwrapByteArray(args.GetIsolate(), args.Holder());
+
+	QString placeholder = ".";
+	if (args.Length() >= 1) {
+		if (!args[0]->IsString()) {
+			Utility::throwException(args.GetIsolate(), Utility::ExceptionInvalidArgumentType);
+			return;
+		}
+		placeholder = Utility::toString(args[0]);
+	}
+
+	QString result;
+	result.reserve(data.length());
+
+	for (int i = 0; i < data.length(); i++) {
+		char c = data.at(i);
+		if (QChar::isPrint(c))
+			result.append(c);
+		else
+			result.append(placeholder);
+	}
+
+	args.GetReturnValue().Set(Utility::toV8String(args.GetIsolate(), result));
 }
 
 void ModuleByteArray::registerTemplates(v8::Isolate* isolate, Local<ObjectTemplate> globalObject)
@@ -137,10 +202,41 @@ void ModuleByteArray::registerTemplates(v8::Isolate* isolate, Local<ObjectTempla
 	Local<ObjectTemplate> constructorInstanceTemplate = constructorTemplate->InstanceTemplate();
 	constructorInstanceTemplate->SetInternalFieldCount(1);
 	constructorInstanceTemplate->Set(String::NewFromUtf8(isolate, "hex"), FunctionTemplate::New(isolate, hex));
+	constructorInstanceTemplate->Set(String::NewFromUtf8(isolate, "base64"), FunctionTemplate::New(isolate, base64));
+	constructorInstanceTemplate->Set(String::NewFromUtf8(isolate, "hash"), FunctionTemplate::New(isolate, hash));
+	constructorInstanceTemplate->Set(String::NewFromUtf8(isolate, "printable"), FunctionTemplate::New(isolate, printable));
 
 	// Store template
-	//ByteArrayTemplate.Reset(isolate, constructorInstanceTemplate);
+	ByteArrayTemplate.Reset(isolate, constructorInstanceTemplate);
 
 	// Set the function in the global scope -- that is, set "ByteArray" to the constructor
 	globalObject->Set(String::NewFromUtf8(isolate, "ByteArray"), constructorTemplate);
+}
+
+Local<Object> ModuleByteArray::wrapByteArray(Isolate* isolate, const QByteArray& data)
+{
+	EscapableHandleScope handle_scope(isolate);
+
+	// Fetch the template for creating ByteArray wrappers.
+	Local<ObjectTemplate> localTemplate = Local<ObjectTemplate>::New(isolate, ByteArrayTemplate);
+
+	// Create an empty ByteArray wrapper.
+	Local<Object> wrapper = localTemplate->NewInstance(isolate->GetCurrentContext()).ToLocalChecked();
+
+	// Store data in ArrayBuffer
+	wrapper->Set(String::NewFromUtf8(isolate, "buffer"), Utility::toV8ArrayBuffer(isolate, data));
+
+	return handle_scope.Escape(wrapper);
+}
+
+QByteArray ModuleByteArray::unwrapByteArray(v8::Isolate* isolate, Local<Object> obj)
+{
+	Local<Value> buffer = obj->Get(String::NewFromUtf8(isolate, "buffer"));
+	if (!buffer->IsArrayBuffer()) {
+		Utility::throwException(isolate, "ByteArray.buffer must be ArrayBuffer");
+		return QByteArray();
+	}
+
+	v8::ArrayBuffer::Contents c = Local<ArrayBuffer>::Cast(buffer)->GetContents();
+	return QByteArray(reinterpret_cast<const char*>(c.Data()), c.ByteLength());
 }
