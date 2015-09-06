@@ -4,7 +4,8 @@
 
 //workspace = new Int8Array(Tools.hash(File.read("test.cwb"), 3));
 
-workspace = Tools.rot13("Wheee");
+workspace = File.read("test.cwb");
+//workspace = Tools.rot13("Wheee");
 
 //function test()
 //{

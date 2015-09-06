@@ -1,3 +1,4 @@
 TODO
 - Add 4 spaces when tab is pressed
 - Fix highlighter
+- Add enums for function parameters

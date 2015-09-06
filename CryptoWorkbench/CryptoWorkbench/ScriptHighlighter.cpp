@@ -1,7 +1,6 @@
 #include "ScriptHighlighter.h"
 #include <QDebug>
 #include <QMetaMethod>
-#include "AlgorithmsCrypto.h"
 
 ScriptHighlighter::ScriptHighlighter(QTextDocument* parent, StyleType style)
 	: QSyntaxHighlighter(parent)
@@ -28,7 +27,7 @@ ScriptHighlighter::ScriptHighlighter(QTextDocument* parent, StyleType style)
 	re = QRegularExpression("\".*\"");
 	highlightingRules.append(HighlightingRule(re, quotationFormat));
 
-	re = QRegularExpression("\\beorkspace\\b");
+	re = QRegularExpression("\\bworkspace\\b");
 	highlightingRules.append(HighlightingRule(re, globalPropertyFormat));
 
 	//re = QRegularExpression("\\boutput\\b");

@@ -1,5 +1,5 @@
-//input = "abcdefghijklmnopqrstuvwxyz";
-output = "";
+input = "abcdefghijklmnopqrstuvwxyz";
+workspace = "";
 for (var i = 0; i < 26; i++) {
-	output += i + "\n" + Crypto.rotateAlphabet(input, i) + "\n\n";	
+    workspace += i + '\n' + Tools.rotateAlphabet(input, i) + '\n\n';
 }

@@ -55,6 +55,7 @@ void CryptoWorkbench::createUi()
 	codeEditor->setTabSize(4);
 
 	workspaceEditor->setFont(font);
+	workspaceEditor->setTabSize(4);
 
 	QShortcut* commentShortcut = new QShortcut(QKeySequence("Ctrl+K"), this);
 	connect(commentShortcut, &QShortcut::activated, this, &CryptoWorkbench::shortcutActivatedComment);

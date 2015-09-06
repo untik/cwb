@@ -189,6 +189,12 @@ void printable(const FunctionCallbackInfo<Value>& args)
 	args.GetReturnValue().Set(Utility::toV8String(args.GetIsolate(), result));
 }
 
+void toString(const FunctionCallbackInfo<Value>& args)
+{
+	QByteArray data = ModuleByteArray::unwrapByteArray(args.GetIsolate(), args.Holder());
+	args.GetReturnValue().Set(Utility::toV8String(args.GetIsolate(), QString::fromUtf8(data)));
+}
+
 void ModuleByteArray::registerTemplates(v8::Isolate* isolate, Local<ObjectTemplate> globalObject)
 {
 	HandleScope handle_scope(isolate);
@@ -205,6 +211,7 @@ void ModuleByteArray::registerTemplates(v8::Isolate* isolate, Local<ObjectTempla
 	constructorInstanceTemplate->Set(String::NewFromUtf8(isolate, "base64"), FunctionTemplate::New(isolate, base64));
 	constructorInstanceTemplate->Set(String::NewFromUtf8(isolate, "hash"), FunctionTemplate::New(isolate, hash));
 	constructorInstanceTemplate->Set(String::NewFromUtf8(isolate, "printable"), FunctionTemplate::New(isolate, printable));
+	constructorInstanceTemplate->Set(String::NewFromUtf8(isolate, "toString"), FunctionTemplate::New(isolate, toString));
 
 	// Store template
 	ByteArrayTemplate.Reset(isolate, constructorInstanceTemplate);

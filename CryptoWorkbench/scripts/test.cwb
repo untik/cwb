@@ -1,13 +1,15 @@
+var input = new ByteArray("The quick brown fox jumps over the lazy dog");
+
 function testHash()
 {
-	// Test SHA1
-	var v1 = Crypto.hex(Crypto.hash("The quick brown fox jumps over the lazy dog", 2));
+    // Test SHA1
+    var v1 = input.hash(2).hex();
 	var v2 = "2fd4e1c67a2d28fced849ee1bb76e7391b93eb12";
 	if (v1 != v2)
 		return false;
 
-	v1 = Crypto.hex(Crypto.hash("", 2));
-	v2 = "da39a3ee5e6b4b0d3255bfef95601890afd80709"
+	v1 = new ByteArray("").hash(2).hex();
+	v2 = "da39a3ee5e6b4b0d3255bfef95601890afd80709";
 	if (v1 != v2)
 		return false;
 
@@ -16,21 +18,21 @@ function testHash()
 
 function testHex()
 {
-	var binary = Crypto.hash("The quick brown fox jumps over the lazy dog", 2);
+	var binary = input.hash(2);
 
-	var v1 = Crypto.hex(binary);
-	var v2 = Crypto.hex(Crypto.decodeHex(v1))
+	var v1 = binary.hex();
+	var v2 = new ByteArray(binary.hex(), 2).hex();
 	if (v1 != v2)
 		return false;
 
-	v1 = Crypto.decodeHex(Crypto.hex(binary));
-	if (v1 != binary)
+	v1 = new ByteArray(binary.hex(), 2).hex();
+	if (v1 != binary.hex())
 		return false;
-	v1 = Crypto.decodeHex(Crypto.hex(binary).toUpperCase());
-	if (v1 != binary)
+	v1 = new ByteArray(binary.hex().toUpperCase(), 2).hex();
+	if (v1 != binary.hex())
 		return false;
-	v1 = Crypto.decodeHex(Crypto.hex(binary, 1));
-	if (v1 != binary)
+	v1 = new ByteArray(binary.hex(1), 2).hex();
+	if (v1 != binary.hex())
 		return false;
 
 	return true;
@@ -38,14 +40,16 @@ function testHex()
 
 function testBase64()
 {
-	var binary = Crypto.hash("The quick brown fox jumps over the lazy dog", 2);
+	var binary = input.hash(2);
 
-	var v1 = Crypto.base64(binary);
-	var v2 = Crypto.decodeBase64(v1)
-	var v3 = Crypto.base64(v2)
+	v1 = binary.base64();
+
+	var v1 = binary.base64();
+	var v2 = new ByteArray(v1, 3);
+	var v3 = v2.base64()
 	if (v1 != v3)
 		return false;
-	if (v2 != binary)
+	if (v2.hex() != binary.hex())
 		return false;
 
 	return true;
@@ -54,14 +58,14 @@ function testBase64()
 function test(name, func)
 {
 	if (func())
-		output += name + " OK\n";
+		workspace += name + " OK\n";
 	else
-		output += name + " Error\n";
+		workspace += name + " Error\n";
 }
 
 function runTests()
 {
-	output = "";
+	workspace = "";
 	test("hash", testHash);
 	test("hex", testHex);
 	test("base64", testBase64);
