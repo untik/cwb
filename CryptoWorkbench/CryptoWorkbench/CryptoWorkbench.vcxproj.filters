@@ -29,6 +29,9 @@
       <Extensions>cpp;moc</Extensions>
       <SourceControlFiles>False</SourceControlFiles>
     </Filter>
+    <Filter Include="Source Files\JavascriptModules">
+      <UniqueIdentifier>{ba36dc12-2861-4029-8ae0-97af1429dcc7}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -79,6 +82,12 @@
     <ClCompile Include="WorkbenchEngine.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="ModuleTools.cpp">
+      <Filter>Source Files\JavascriptModules</Filter>
+    </ClCompile>
+    <ClCompile Include="ModuleByteArray.cpp">
+      <Filter>Source Files\JavascriptModules</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <CustomBuild Include="CryptoWorkbench.ui">
@@ -112,6 +121,18 @@
     </ClInclude>
     <ClInclude Include="ScriptResult.h">
       <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ModuleTools.h">
+      <Filter>Source Files\JavascriptModules</Filter>
+    </ClInclude>
+    <ClInclude Include="Environment.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Utility.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ModuleByteArray.h">
+      <Filter>Source Files\JavascriptModules</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

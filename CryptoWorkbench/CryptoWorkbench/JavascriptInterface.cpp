@@ -1,9 +1,9 @@
 #include "JavascriptInterface.h"
 #include "WorkbenchEngine.h"
 
-JavascriptInterface::JavascriptInterface(const QString& coreLibraryPath, QObject* parent)
+JavascriptInterface::JavascriptInterface(const Environment& environment, QObject* parent)
 {
-	engine = new WorkbenchEngine(coreLibraryPath);
+	engine = new WorkbenchEngine(environment);
 }
 
 JavascriptInterface::~JavascriptInterface()

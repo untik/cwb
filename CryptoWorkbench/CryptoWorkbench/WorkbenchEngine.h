@@ -5,6 +5,7 @@
 #include <QStringList>
 #include "include/v8.h"
 #include "ScriptResult.h"
+#include "Environment.h"
 
 ////////////////////////////////////////////////////////////////////////////////////
 ///
@@ -16,7 +17,7 @@ class WorkbenchEngine
 	class ArrayBufferAllocator;
 
 public:
-	WorkbenchEngine(const QString& coreLibraryPath);
+	WorkbenchEngine(const Environment& engineEnvironment);
 	~WorkbenchEngine();
 
 	// Run javascript
@@ -24,7 +25,7 @@ public:
 
 	// Resolve absolute path to provided file
 	// Returns empty string on error
-	QString resolveFilePath(const QString& fileName);
+	QString resolveScriptFilePath(const QString& fileName);
 
 	// Append exception details to list of encountered exceptions
 	void appendExceptionReport(v8::TryCatch* trycatch);
@@ -39,6 +40,7 @@ private:
 	ArrayBufferAllocator* alocator;
 	QStringList exceptions;
 	QString coreLibraryCode;
+	Environment environment;
 };
 
 #endif // WORKBENCHENGINE_H

@@ -111,6 +111,8 @@
     </ClCompile>
     <ClCompile Include="JavascriptInterface.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="ModuleByteArray.cpp" />
+    <ClCompile Include="ModuleTools.cpp" />
     <ClCompile Include="ScriptHighlighter.cpp" />
     <ClCompile Include="WorkbenchEngine.cpp" />
   </ItemGroup>
@@ -139,6 +141,10 @@
     </CustomBuild>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="ModuleByteArray.h" />
+    <ClInclude Include="Utility.h" />
+    <ClInclude Include="Environment.h" />
+    <ClInclude Include="ModuleTools.h" />
     <ClInclude Include="ScriptResult.h" />
     <ClInclude Include="WorkbenchEngine.h" />
     <CustomBuild Include="AlgorithmsCrypto.h">

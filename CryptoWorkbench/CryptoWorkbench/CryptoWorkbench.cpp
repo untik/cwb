@@ -1,6 +1,7 @@
 #include "CryptoWorkbench.h"
 #include "JavascriptInterface.h"
 #include "ScriptHighlighter.h"
+#include "Environment.h"
 #include <QSplitter>
 #include <QHBoxLayout>
 #include <QVBoxLayout>
@@ -19,7 +20,14 @@ CryptoWorkbench::CryptoWorkbench(QWidget *parent)
 	createUi();
 	loadDefaultFiles();
 
-	js = new JavascriptInterface("../data/corelib.js", this);
+	Environment e;
+	e.coreLibraryName = "corelib.js";
+	e.coreLibraryPath = "../data/";
+	e.currentScriptName = "current.js";
+	e.workspaceName = "workspace";
+	e.scriptLoadPath = "../scripts/";
+
+	js = new JavascriptInterface(e, this);
 }
 
 CryptoWorkbench::~CryptoWorkbench()

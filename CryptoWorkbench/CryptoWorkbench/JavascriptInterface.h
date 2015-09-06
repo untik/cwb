@@ -4,6 +4,7 @@
 #include <QString>
 #include <QObject>
 #include "ScriptResult.h"
+#include "Environment.h"
 
 class WorkbenchEngine;
 
@@ -17,7 +18,7 @@ class JavascriptInterface : public QObject
 	Q_OBJECT
 
 public:
-	JavascriptInterface(const QString& coreLibraryPath, QObject* parent = NULL);
+	JavascriptInterface(const Environment& environment, QObject* parent = NULL);
 	~JavascriptInterface();
 
 	// Run javascript

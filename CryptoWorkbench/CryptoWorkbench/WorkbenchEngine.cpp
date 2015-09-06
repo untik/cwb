@@ -1,10 +1,12 @@
 #include "WorkbenchEngine.h"
 #include "include/libplatform/libplatform.h"
 #include <QFile>
+#include "ModuleTools.h"
+#include "ModuleByteArray.h"
+#include "Utility.h"
 
 using namespace v8;
 
-void throwException(Isolate* isolate, const QString& message);
 void loadCallback(const FunctionCallbackInfo<Value>& args);
 void readFileCallback(const FunctionCallbackInfo<Value>& args);
 MaybeLocal<Value> executeString(WorkbenchEngine* workbenchEngine, Isolate* isolate, Local<String> source, Local<Value> name);
@@ -23,17 +25,8 @@ public:
 };
 
 
-namespace Convert
-{
-	QString toString(const Local<Value>& obj, const QString& defaultValue = QString())
-	{
-		String::Utf8Value value(obj);
-		return (*value == NULL) ? defaultValue : QString::fromUtf8(*value, value.length());
-	}
-};
-
-
-WorkbenchEngine::WorkbenchEngine(const QString& coreLibraryPath)
+WorkbenchEngine::WorkbenchEngine(const Environment& engineEnvironment)
+	: environment(engineEnvironment)
 {
 	// Initialize V8.
 	V8::InitializeICU();
@@ -55,7 +48,7 @@ WorkbenchEngine::WorkbenchEngine(const QString& coreLibraryPath)
 	isolate = Isolate::New(create_params);
 
 	// Load core library
-	QFile file(coreLibraryPath);
+	QFile file(environment.coreLibraryPath + environment.coreLibraryName);
 	if (file.open(QFile::ReadOnly))
 		coreLibraryCode = QString::fromUtf8(file.readAll());
 }
@@ -83,42 +76,40 @@ ScriptResult WorkbenchEngine::evaluate(const QString& scriptText, const QString&
 
 	Context::Scope context_scope(context);
 
-	// Create a string containing the JavaScript source code.
-	Local<String> source = String::NewFromTwoByte(isolate, scriptText.utf16(), NewStringType::kNormal).ToLocalChecked();
-	Local<String> origin = String::NewFromUtf8(isolate, "current.js", NewStringType::kNormal).ToLocalChecked();
-
 	// Compile and run core library if loaded
 	if (!coreLibraryCode.isEmpty()) {
-		Local<String> coreLibSource = String::NewFromTwoByte(isolate, coreLibraryCode.utf16(), NewStringType::kNormal).ToLocalChecked();
-		Local<String> coreLibOrigin = String::NewFromUtf8(isolate, "corelib.js", NewStringType::kNormal).ToLocalChecked();
-		MaybeLocal<Value> coreLibResult = executeString(this, isolate, coreLibSource, coreLibOrigin);
+		MaybeLocal<Value> coreLibResult = executeString(this, isolate, 
+														Utility::toV8String(isolate, coreLibraryCode),
+														Utility::toV8String(isolate, environment.coreLibraryName));
 		if (coreLibResult.IsEmpty())
 			return ScriptResult::error(exceptions.join("\n\n"));
 	}
 
 	// Compile and run the javascript
-	MaybeLocal<Value> result = executeString(this, isolate, source, origin);
+	MaybeLocal<Value> result = executeString(this, isolate, 
+											 Utility::toV8String(isolate, scriptText),
+											 Utility::toV8String(isolate, environment.currentScriptName));
 	if (result.IsEmpty())
 		return ScriptResult::error(exceptions.join("\n\n"));
 
 	// Get output variable.
-	MaybeLocal<Value> outputValue = context->Global()->Get(String::NewFromUtf8(isolate, "workspace"));
+	MaybeLocal<Value> outputValue = context->Global()->Get(Utility::toV8String(isolate, environment.workspaceName));
 	if (outputValue.IsEmpty())
 		return ScriptResult::error("Workspace error");
 
-	QString resultString = Convert::toString(result.ToLocalChecked());
-	QString outputString = Convert::toString(outputValue.ToLocalChecked());
+	QString resultString = Utility::toString(result.ToLocalChecked());
+	QString outputString = Utility::toString(outputValue.ToLocalChecked());
 
 	if (outputString.isEmpty())
 		return ScriptResult::success(resultString);
 	return ScriptResult::success(outputString);
 }
 
-QString WorkbenchEngine::resolveFilePath(const QString& fileName)
+QString WorkbenchEngine::resolveScriptFilePath(const QString& fileName)
 {
 	// TODO - Add proper sanitization and escaping
 
-	QString resolvedPath = "../scripts/" + fileName;
+	QString resolvedPath = environment.scriptLoadPath + fileName;
 	if (!QFile::exists(resolvedPath))
 		return QString();
 	return resolvedPath;
@@ -131,27 +122,33 @@ void WorkbenchEngine::appendExceptionReport(TryCatch* trycatch)
 
 Local<Context> WorkbenchEngine::createGlobalContext(const QString& workspaceText)
 {
+	EscapableHandleScope handle_scope(isolate);
+
 	// Create a template for the global object.
-	Local<ObjectTemplate> global = ObjectTemplate::New(isolate);
+	Local<ObjectTemplate> globalObject = ObjectTemplate::New(isolate);
 
 	// Register variable for workspace data
-	global->Set(String::NewFromUtf8(isolate, "workspace"), String::NewFromUtf8(isolate, workspaceText.toUtf8()));
+	globalObject->Set(Utility::toV8String(isolate, environment.workspaceName), Utility::toV8String(isolate, workspaceText));
 
 	// Register global functions
-	global->Set(String::NewFromUtf8(isolate, "load"), FunctionTemplate::New(isolate, loadCallback, External::New(isolate, this)));
+	globalObject->Set(String::NewFromUtf8(isolate, "load"), FunctionTemplate::New(isolate, loadCallback, External::New(isolate, this)));
 
 	// Register file manipulation functions
 	Local<ObjectTemplate> fileObject = ObjectTemplate::New(isolate);
 	fileObject->Set(String::NewFromUtf8(isolate, "read"), FunctionTemplate::New(isolate, readFileCallback, External::New(isolate, this)));
-	global->Set(String::NewFromUtf8(isolate, "File"), fileObject);
+	globalObject->Set(String::NewFromUtf8(isolate, "File"), fileObject);
 
-	return Context::New(isolate, NULL, global);
+	// Register workbench functions
+	ModuleTools::registerTemplates(isolate, globalObject);
+	ModuleByteArray::registerTemplates(isolate, globalObject);
+
+	return handle_scope.Escape(Context::New(isolate, NULL, globalObject));
 }
 
 QString WorkbenchEngine::buildExceptionReport(TryCatch* trycatch)
 {
 	HandleScope handle_scope(isolate);
-	QString exceptionString = Convert::toString(trycatch->Exception());
+	QString exceptionString = Utility::toString(trycatch->Exception());
 
 	Local<Message> message = trycatch->Message();
 	if (message.IsEmpty()) {
@@ -160,14 +157,14 @@ QString WorkbenchEngine::buildExceptionReport(TryCatch* trycatch)
 	}
 
 	// Print (filename):(line number): (message).
-	QString fileName = Convert::toString(message->GetScriptOrigin().ResourceName());
+	QString fileName = Utility::toString(message->GetScriptOrigin().ResourceName());
 	Local<Context> context(isolate->GetCurrentContext());
 	int lineNumber = message->GetLineNumber(context).FromJust();
 
 	QString report = QString("%1:%2: %3\n").arg(fileName).arg(lineNumber).arg(exceptionString);
 
 	// Print line of source code.
-	QString sourceLine = Convert::toString(message->GetSourceLine(context).ToLocalChecked());
+	QString sourceLine = Utility::toString(message->GetSourceLine(context).ToLocalChecked());
 	report.append(sourceLine);
 	report.append("\n");
 
@@ -183,19 +180,13 @@ QString WorkbenchEngine::buildExceptionReport(TryCatch* trycatch)
 	report.append("\n");
 
 	// Print stack trace
-	QString stackTrace = Convert::toString(trycatch->StackTrace(context).ToLocalChecked());
-	if (!stackTrace.isEmpty()) {
-		report.append(stackTrace);
+	MaybeLocal<Value> stackTrace = trycatch->StackTrace(context);
+	if (!stackTrace.IsEmpty()) {
+		report.append(Utility::toString(stackTrace.ToLocalChecked()));
 		report.append("\n");
 	}
 
 	return report;
-}
-
-void throwException(Isolate* isolate, const QString& message)
-{
-	isolate->ThrowException(
-		String::NewFromTwoByte(isolate, message.utf16(), NewStringType::kNormal).ToLocalChecked());
 }
 
 void loadCallback(const FunctionCallbackInfo<Value>& args)
@@ -206,15 +197,15 @@ void loadCallback(const FunctionCallbackInfo<Value>& args)
 	WorkbenchEngine* workbenchEngine = reinterpret_cast<WorkbenchEngine*>(Local<External>::Cast(args.Data())->Value());
 	HandleScope handle_scope(args.GetIsolate());
 
-	QString filePath = workbenchEngine->resolveFilePath(Convert::toString(args[0]));
+	QString filePath = workbenchEngine->resolveScriptFilePath(Utility::toString(args[0]));
 	if (filePath.isEmpty()) {
-		throwException(args.GetIsolate(), "Invalid file parameter");
+		Utility::throwException(args.GetIsolate(), "Invalid file parameter");
 		return;
 	}
 
 	QFile file(filePath);
 	if (!file.open(QFile::ReadOnly)) {
-		throwException(args.GetIsolate(), QString("Could not open file: %1").arg(filePath));
+		Utility::throwException(args.GetIsolate(), QString("Could not open file: %1").arg(filePath));
 		return;
 	}
 
@@ -222,7 +213,7 @@ void loadCallback(const FunctionCallbackInfo<Value>& args)
 	Local<String> source;
 	bool ok = String::NewFromUtf8(args.GetIsolate(), fileContent.data(), NewStringType::kNormal, fileContent.length()).ToLocal(&source);
 	if (!ok) {
-		throwException(args.GetIsolate(), QString("File too large: %1").arg(filePath));
+		Utility::throwException(args.GetIsolate(), QString("File too large: %1").arg(filePath));
 		return;
 	}
 
@@ -241,15 +232,15 @@ void readFileCallback(const FunctionCallbackInfo<Value>& args)
 	WorkbenchEngine* workbenchEngine = reinterpret_cast<WorkbenchEngine*>(Local<External>::Cast(args.Data())->Value());
 	HandleScope handle_scope(args.GetIsolate());
 
-	QString filePath = workbenchEngine->resolveFilePath(Convert::toString(args[0]));
+	QString filePath = workbenchEngine->resolveScriptFilePath(Utility::toString(args[0]));
 	if (filePath.isEmpty()) {
-		throwException(args.GetIsolate(), "Invalid file parameter");
+		Utility::throwException(args.GetIsolate(), "Invalid file parameter");
 		return;
 	}
 
 	QFile file(filePath);
 	if (!file.open(QFile::ReadOnly)) {
-		throwException(args.GetIsolate(), QString("Could not open file: %1").arg(filePath));
+		Utility::throwException(args.GetIsolate(), QString("Could not open file: %1").arg(filePath));
 		return;
 	}
 

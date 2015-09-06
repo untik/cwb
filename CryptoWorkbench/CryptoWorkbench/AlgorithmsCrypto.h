@@ -29,6 +29,7 @@ public slots:
 	QString ngramFrequency(const QString& input, int n, int frequencyLimit = 0);
 	QString wordFrequency(const QString& input, int frequencyLimit = 0);
 	QString hash(const QString& input, int algorithm);
+
 	QString decodeHex(const QString& input);
 	QString hex(const QString& input, int format = 0);
 	QString decodeBase64(const QString& input);
