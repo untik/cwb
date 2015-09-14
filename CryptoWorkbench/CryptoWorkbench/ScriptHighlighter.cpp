@@ -58,6 +58,10 @@ ScriptHighlighter::ScriptHighlighter(QTextDocument* parent, StyleType style)
 	highlightingRules.append(HighlightingRule(re, objectMembersFormat, 6));
 	re = QRegularExpression("\\bTools\\.rot13\\b");
 	highlightingRules.append(HighlightingRule(re, objectMembersFormat, 6));
+	re = QRegularExpression("\\bTools\\.frequencyList\\b");
+	highlightingRules.append(HighlightingRule(re, objectMembersFormat, 6));
+	re = QRegularExpression("\\bTools\\.frequencyGraph\\b");
+	highlightingRules.append(HighlightingRule(re, objectMembersFormat, 6));
 
 	re = QRegularExpression("\\bFile\\b");
 	highlightingRules.append(HighlightingRule(re, globalClassFormat));

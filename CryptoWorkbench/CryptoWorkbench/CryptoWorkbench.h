@@ -39,7 +39,6 @@ private:
 	JavascriptInterface* js;
 	CodeEditor* workspaceEditor;
 	CodeEditor* codeEditor;
-	QLabel* codeEditorLabel;
 	CodeEditor* consoleEditor;
 	QString currentFileName;
 	bool isCodeChanged;

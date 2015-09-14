@@ -157,19 +157,21 @@ void ngramFrequency(const FunctionCallbackInfo<Value>& args)
 	qSort(values);
 
 	// Print results
-	QString result;
+	Isolate* isolate = args.GetIsolate();
+	HandleScope handle_scope(isolate);
+	Local<Array> resultArray = Array::New(isolate);
 	for (int i = 0; i < values.count(); i++) {
 		const FrequencyValue& ngram = values.at(i);
 		if (ngram.frequency == frequencyLimit - 1)
 			break;
 
-		result.append(ngram.value);
-		result.append("  ");
-		result.append(QString::number(ngram.frequency));
-		result.append("\n");
+		Local<Object> object = Object::New(isolate);
+		object->Set(Utility::toV8String(isolate, "value"), Utility::toV8String(isolate, ngram.value));
+		object->Set(Utility::toV8String(isolate, "frequency"), Int32::New(isolate, ngram.frequency));
+		resultArray->Set(i, object);
 	}
 
-	args.GetReturnValue().Set(Utility::toV8String(args.GetIsolate(), result));
+	args.GetReturnValue().Set(resultArray);
 }
 
 void wordFrequency(const FunctionCallbackInfo<Value>& args)
@@ -213,19 +215,21 @@ void wordFrequency(const FunctionCallbackInfo<Value>& args)
 	qSort(values);
 
 	// Print results
-	QString result;
+	Isolate* isolate = args.GetIsolate();
+	HandleScope handle_scope(isolate);
+	Local<Array> resultArray = Array::New(isolate);
 	for (int i = 0; i < values.count(); i++) {
 		const FrequencyValue& word = values.at(i);
 		if (word.frequency == frequencyLimit - 1)
 			break;
 
-		result.append(word.value);
-		result.append("  ");
-		result.append(QString::number(word.frequency));
-		result.append("\n");
+		Local<Object> object = Object::New(isolate);
+		object->Set(Utility::toV8String(isolate, "value"), Utility::toV8String(isolate, word.value));
+		object->Set(Utility::toV8String(isolate, "frequency"), Int32::New(isolate, word.frequency));
+		resultArray->Set(i, object);
 	}
 
-	args.GetReturnValue().Set(Utility::toV8String(args.GetIsolate(), result));
+	args.GetReturnValue().Set(resultArray);
 }
 
 void ModuleTools::registerTemplates(v8::Isolate* isolate, Local<ObjectTemplate> globalObject)

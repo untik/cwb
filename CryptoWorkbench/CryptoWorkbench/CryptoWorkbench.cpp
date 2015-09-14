@@ -82,12 +82,10 @@ QWidget* CryptoWorkbench::createWorkspaceEditor(QWidget* parent)
 {
 	QWidget* widget = new QWidget(parent);
 	QVBoxLayout* widgetLayout = new QVBoxLayout(widget);
-	QLabel* label = new QLabel("Workspace", widget);
 
 	workspaceEditor = new CodeEditor(widget);
 
 	widgetLayout->setMargin(0);
-	widgetLayout->addWidget(label);
 	widgetLayout->addWidget(workspaceEditor);
 	return widget;
 }
@@ -96,10 +94,7 @@ QWidget* CryptoWorkbench::createCodeEditor(QWidget* parent)
 {
 	QWidget* widget = new QWidget(parent);
 	QVBoxLayout* widgetLayout = new QVBoxLayout(widget);
-	QHBoxLayout* toolbarLayout = new QHBoxLayout(widget);
-
-	//codeEditorLabel = new QLabel("Script", widget);
-	//toolbarLayout->addWidget(codeEditorLabel);
+	QHBoxLayout* toolbarLayout = new QHBoxLayout();
 
 	QPushButton* buttonOpenScript = new QPushButton("&Open...", widget);
 	buttonOpenScript->setMinimumHeight(30);
@@ -126,8 +121,8 @@ QWidget* CryptoWorkbench::createCodeEditor(QWidget* parent)
 	ScriptHighlighter* highlighter = new ScriptHighlighter(codeEditor->document(), ScriptHighlighter::StyleDark);
 
 	widgetLayout->setMargin(0);
-	widgetLayout->addLayout(toolbarLayout);
 	widgetLayout->addWidget(codeEditor);
+	widgetLayout->addLayout(toolbarLayout);
 	return widget;
 }
 
