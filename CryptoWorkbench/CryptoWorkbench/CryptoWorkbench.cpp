@@ -8,7 +8,6 @@
 #include <QLabel>
 #include <QPushButton>
 #include <QShortcut>
-#include <QTextDocumentFragment>
 #include <QFileDialog>
 #include <QElapsedTimer>
 #include <QDebug>
@@ -50,12 +49,16 @@ void CryptoWorkbench::createUi()
 	QFont font;
 	font.setFamily("Lucida Console");
 	font.setFixedPitch(true);
-	font.setPointSize(11);
+	font.setPointSize(12);
 	codeEditor->setFont(font);
 	codeEditor->setTabSize(4);
+	codeEditor->setLineNumbersBackgroundColor("#2d2d30");
+	codeEditor->setLineNumbersForegroundColor("#2b91af");
 
 	workspaceEditor->setFont(font);
 	workspaceEditor->setTabSize(4);
+	workspaceEditor->setLineNumbersBackgroundColor("#2d2d30");
+	workspaceEditor->setLineNumbersForegroundColor("#2b91af");
 
 	QShortcut* commentShortcut = new QShortcut(QKeySequence("Ctrl+K"), this);
 	connect(commentShortcut, &QShortcut::activated, this, &CryptoWorkbench::shortcutActivatedComment);
@@ -65,9 +68,14 @@ void CryptoWorkbench::createUi()
 
 	QShortcut* runShortcut = new QShortcut(QKeySequence("Ctrl+R"), this);
 	connect(runShortcut, &QShortcut::activated, this, &CryptoWorkbench::runClicked);
+	QShortcut* runShortcut2 = new QShortcut(QKeySequence("F5"), this);
+	connect(runShortcut2, &QShortcut::activated, this, &CryptoWorkbench::runClicked);
 
 	QShortcut* helpShortcut = new QShortcut(QKeySequence("F1"), this);
 	connect(helpShortcut, &QShortcut::activated, this, &CryptoWorkbench::helpClicked);
+
+	ui.statusBar->showMessage("Ready");
+	ui.statusBar->setStyleSheet("QStatusBar { background-color: #007acc; }");
 }
 
 QWidget* CryptoWorkbench::createWorkspaceEditor(QWidget* parent)
@@ -115,7 +123,7 @@ QWidget* CryptoWorkbench::createCodeEditor(QWidget* parent)
 
 	codeEditor = new CodeEditor(widget);
 	connect(codeEditor, &QPlainTextEdit::textChanged, this, &CryptoWorkbench::codeChanged);
-	ScriptHighlighter* highlighter = new ScriptHighlighter(codeEditor->document());
+	ScriptHighlighter* highlighter = new ScriptHighlighter(codeEditor->document(), ScriptHighlighter::StyleDark);
 
 	widgetLayout->setMargin(0);
 	widgetLayout->addLayout(toolbarLayout);
@@ -165,72 +173,12 @@ void CryptoWorkbench::saveActiveScript()
 
 void CryptoWorkbench::shortcutActivatedComment()
 {
-	QTextCursor cursor = codeEditor->textCursor();
-	int start = cursor.selectionStart();
-	int end = cursor.selectionEnd();
-
-	cursor.setPosition(start);
-	int firstLine = cursor.blockNumber();
-	cursor.setPosition(end, QTextCursor::KeepAnchor);
-	int lastLine = cursor.blockNumber();
-	//qWarning() << "start: " << firstLine << " end: " << lastLine << endl;
-
-	QTextBlock blockStart = codeEditor->document()->findBlockByNumber(firstLine);
-	int startCharIndex = blockStart.position();
-	QTextBlock blockEnd = codeEditor->document()->findBlockByNumber(lastLine);
-	int endCharIndex = blockEnd.position() + blockEnd.length() - 1;
-
-	cursor.setPosition(startCharIndex);
-	cursor.setPosition(endCharIndex, QTextCursor::KeepAnchor);
-
-	codeEditor->setTextCursor(cursor);
-	QTextDocumentFragment fragment = cursor.selection();
-	QString selected = fragment.toPlainText();
-	//qDebug() << selected;
-
-	QStringList list = selected.split('\n');
-	for (int i = 0; i < list.count(); i++) {
-		list.replace(i, "//" + list.at(i));
-	}
-	selected = list.join('\n');
-
-	cursor.insertText(selected);
+	codeEditor->commentSelection();
 }
 
 void CryptoWorkbench::shortcutActivatedUncomment()
 {
-	QTextCursor cursor = codeEditor->textCursor();
-	int start = cursor.selectionStart();
-	int end = cursor.selectionEnd();
-
-	cursor.setPosition(start);
-	int firstLine = cursor.blockNumber();
-	cursor.setPosition(end, QTextCursor::KeepAnchor);
-	int lastLine = cursor.blockNumber();
-	//qWarning() << "start: " << firstLine << " end: " << lastLine << endl;
-
-	QTextBlock blockStart = codeEditor->document()->findBlockByNumber(firstLine);
-	int startCharIndex = blockStart.position();
-	QTextBlock blockEnd = codeEditor->document()->findBlockByNumber(lastLine);
-	int endCharIndex = blockEnd.position() + blockEnd.length() - 1;
-
-	cursor.setPosition(startCharIndex);
-	cursor.setPosition(endCharIndex, QTextCursor::KeepAnchor);
-
-	codeEditor->setTextCursor(cursor);
-	QTextDocumentFragment fragment = cursor.selection();
-	QString selected = fragment.toPlainText();
-	//qDebug() << selected;
-
-	QStringList list = selected.split('\n');
-	for (int i = 0; i < list.count(); i++) {
-		QString line = list.at(i);
-		if (line.startsWith("//"))
-			list.replace(i, line.mid(2));
-	}
-	selected = list.join('\n');
-
-	cursor.insertText(selected);
+	codeEditor->uncommentSelection();
 }
 
 void CryptoWorkbench::openClicked()
@@ -271,7 +219,12 @@ void CryptoWorkbench::runClicked()
 	QElapsedTimer timer;
 	timer.start();
 	ScriptResult result = js->evaluate(script, workspaceText);
+
 	ui.statusBar->showMessage(QString("Script runtime: %1 ms").arg(timer.elapsed()));
+	if (result.isValid())
+		ui.statusBar->setStyleSheet("QStatusBar { background-color: #326c00; }");
+	else
+		ui.statusBar->setStyleSheet("QStatusBar { background-color: #6c0e00; }");
 
 	workspaceEditor->appendPlainText(result.data());
 }

@@ -128,9 +128,9 @@ void ngramFrequency(const FunctionCallbackInfo<Value>& args)
 	}
 
 	QString input = Utility::toString(args[0]);
-	int ngramLength = args[2]->Int32Value();
+	int ngramLength = args[1]->Int32Value();
 
-	if (ngramLength <=0 ) {
+	if (ngramLength <= 0) {
 		Utility::throwException(args.GetIsolate(), Utility::ExceptionInvalidArgumentValue);
 		return;
 	}

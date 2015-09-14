@@ -120,13 +120,13 @@ void ScriptHighlighter::initStyle(StyleType style)
 			break;
 			
 		case ScriptHighlighter::StyleDark:
-			keywordFormat.setForeground(Qt::darkBlue);
-			numberFormat.setForeground(Qt::darkMagenta);
-			quotationFormat.setForeground(Qt::darkRed);
-			globalClassFormat.setForeground(Qt::gray);
+			keywordFormat.setForeground(QColor("#569cd6"));
+			numberFormat.setForeground(QColor("#b5cea8"));
+			quotationFormat.setForeground(QColor("#d69d85"));
+			globalClassFormat.setForeground(QColor("#7f7f7f"));
 			objectMembersFormat.setForeground(Qt::darkCyan);
-			singleLineCommentFormat.setForeground(Qt::darkGreen);
-			multiLineCommentFormat.setForeground(Qt::darkGreen);
+			singleLineCommentFormat.setForeground(QColor("#57a64a"));
+			multiLineCommentFormat.setForeground(QColor("#57a64a"));
 			globalPropertyFormat.setForeground(Qt::darkCyan);
 			break;
 	}

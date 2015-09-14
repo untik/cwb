@@ -21,9 +21,16 @@ public:
 
 	void setTabSize(int spaces = 4);
 
+	void setLineNumbersBackgroundColor(const QColor& color) { lineNumbersBackgroundColor = color; }
+	void setLineNumbersForegroundColor(const QColor& color) { lineNumbersForegroundColor = color; }
+
+	void commentSelection();
+	void uncommentSelection();
+
 protected:
 	void resizeEvent(QResizeEvent* event);
 	void lineNumberAreaPaintEvent(QPaintEvent* event);
+	void keyPressEvent(QKeyEvent* event);
 
 private slots:
 	void updateLineNumberAreaWidth(int newBlockCount);
@@ -32,11 +39,22 @@ private slots:
 private:
 	int lineNumberAreaWidth;
 	LineNumberArea* lineNumberArea;
+	QColor lineNumbersBackgroundColor;
+	QColor lineNumbersForegroundColor;
 };
 
+
+////////////////////////////////////////////////////////////////////////////////////
+///
+/// Widget for catching paint event for code editor line number area
+/// Used internally by CodeEditor
+///
+////////////////////////////////////////////////////////////////////////////////////
 class LineNumberArea : public QWidget
 {
-public:
+	friend class CodeEditor;
+
+private:
 	LineNumberArea(CodeEditor *scriptEditor)
 		: editor(scriptEditor), QWidget(scriptEditor)
 	{}

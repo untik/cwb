@@ -13,8 +13,66 @@
   <property name="windowTitle">
    <string>CryptoWorkbench</string>
   </property>
-  <widget class="QWidget" name="centralWidget"/>
+  <property name="styleSheet">
+   <string notr="true">#centralWidget {
+	background-color: #2d2d30;
+}
+QPlainTextEdit {
+	background-color: #1e1e1e;
+	color: #c8c8c8;
+	selection-background-color: #264f78;
+}
+QStatusBar {
+	color: white;
+}
+QPushButton {
+	background-color: #2d2d30;
+	color: #c8c8c8;
+	border: 1px solid #3f3f46;
+}
+QPushButton::hover {
+	background-color: #3f3f46;
+}
+QSplitter::handle {
+	background-color: #2d2d30;
+}</string>
+  </property>
+  <widget class="QWidget" name="centralWidget">
+   <widget class="QPushButton" name="pushButton">
+    <property name="geometry">
+     <rect>
+      <x>90</x>
+      <y>300</y>
+      <width>151</width>
+      <height>41</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>PushButton</string>
+    </property>
+   </widget>
+   <widget class="QPlainTextEdit" name="plainTextEdit">
+    <property name="geometry">
+     <rect>
+      <x>190</x>
+      <y>60</y>
+      <width>311</width>
+      <height>171</height>
+     </rect>
+    </property>
+   </widget>
+  </widget>
   <widget class="QStatusBar" name="statusBar"/>
+  <widget class="QMenuBar" name="menuBar">
+   <property name="geometry">
+    <rect>
+     <x>0</x>
+     <y>0</y>
+     <width>750</width>
+     <height>21</height>
+    </rect>
+   </property>
+  </widget>
  </widget>
  <layoutdefault spacing="6" margin="11"/>
  <resources>

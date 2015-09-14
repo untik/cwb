@@ -1,26 +1,7 @@
-//workspace = new Int8Array(File.read("test.cwb"));
+var bookOfWoo = File.read("wooscript/wooscript.txt");
 
-//workspace = hello();
+workspace = Tools.ngramFrequency(bookOfWoo.toString(), 3, 10);
 
-//workspace = new Int8Array(Tools.hash(File.read("test.cwb"), 3));
-
-workspace = File.read("test.cwb");
-//workspace = Tools.rot13("Wheee");
-
-//function test()
-//{
-//	var ba = new ByteArray("test");
-////    var hash = ba.hash(1);
-//    workspace = ba.hash(3).printable("_");
-//    //workspace = (new ByteArray(hash.base64(), 3)).hex(1);
-//}
-//
-//test();
-
-
-//load("test.cwb");
-
-//output = Bench.replaceLetters();
-//output = Tools.replaceLetters();
-//
-//var a = new ByteArray();
+function test() {
+	
+}

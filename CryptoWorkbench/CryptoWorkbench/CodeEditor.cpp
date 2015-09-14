@@ -1,6 +1,7 @@
 #include "CodeEditor.h"
 #include <QPainter>
 #include <QTextBlock>
+#include <QTextDocumentFragment>
 
 CodeEditor::CodeEditor(QWidget *parent)
 	: QPlainTextEdit(parent)
@@ -9,6 +10,9 @@ CodeEditor::CodeEditor(QWidget *parent)
 	connect(this, SIGNAL(updateRequest(QRect, int)), this, SLOT(updateLineNumberArea(QRect, int)));
 
 	lineNumberArea = new LineNumberArea(this);
+
+	lineNumbersBackgroundColor = Qt::lightGray;
+	lineNumbersForegroundColor = Qt::black;
 
 	updateLineNumberAreaWidth(0);
 }
@@ -19,6 +23,82 @@ CodeEditor::~CodeEditor()
 void CodeEditor::setTabSize(int spaces)
 {
 	setTabStopWidth(fontMetrics().width(QLatin1Char('9')) * spaces);
+}
+
+void CodeEditor::commentSelection()
+{
+	QTextCursor cursor = textCursor();
+	cursor.beginEditBlock();
+
+	int start = cursor.selectionStart();
+	int end = cursor.selectionEnd();
+
+	cursor.setPosition(start);
+	int firstLine = cursor.blockNumber();
+	cursor.setPosition(end, QTextCursor::KeepAnchor);
+	int lastLine = cursor.blockNumber();
+	//qWarning() << "start: " << firstLine << " end: " << lastLine << endl;
+
+	QTextBlock blockStart = document()->findBlockByNumber(firstLine);
+	int startCharIndex = blockStart.position();
+	QTextBlock blockEnd = document()->findBlockByNumber(lastLine);
+	int endCharIndex = blockEnd.position() + blockEnd.length() - 1;
+
+	cursor.setPosition(startCharIndex);
+	cursor.setPosition(endCharIndex, QTextCursor::KeepAnchor);
+
+	setTextCursor(cursor);
+	QTextDocumentFragment fragment = cursor.selection();
+	QString selected = fragment.toPlainText();
+	//qDebug() << selected;
+
+	QStringList list = selected.split('\n');
+	for (int i = 0; i < list.count(); i++) {
+		list.replace(i, "//" + list.at(i));
+	}
+	selected = list.join('\n');
+
+	cursor.insertText(selected);
+	cursor.endEditBlock();
+}
+
+void CodeEditor::uncommentSelection()
+{
+	QTextCursor cursor = textCursor();
+	cursor.beginEditBlock();
+
+	int start = cursor.selectionStart();
+	int end = cursor.selectionEnd();
+
+	cursor.setPosition(start);
+	int firstLine = cursor.blockNumber();
+	cursor.setPosition(end, QTextCursor::KeepAnchor);
+	int lastLine = cursor.blockNumber();
+	//qWarning() << "start: " << firstLine << " end: " << lastLine << endl;
+
+	QTextBlock blockStart = document()->findBlockByNumber(firstLine);
+	int startCharIndex = blockStart.position();
+	QTextBlock blockEnd = document()->findBlockByNumber(lastLine);
+	int endCharIndex = blockEnd.position() + blockEnd.length() - 1;
+
+	cursor.setPosition(startCharIndex);
+	cursor.setPosition(endCharIndex, QTextCursor::KeepAnchor);
+
+	setTextCursor(cursor);
+	QTextDocumentFragment fragment = cursor.selection();
+	QString selected = fragment.toPlainText();
+	//qDebug() << selected;
+
+	QStringList list = selected.split('\n');
+	for (int i = 0; i < list.count(); i++) {
+		QString line = list.at(i);
+		if (line.startsWith("//"))
+			list.replace(i, line.mid(2));
+	}
+	selected = list.join('\n');
+
+	cursor.insertText(selected);
+	cursor.endEditBlock();
 }
 
 void CodeEditor::updateLineNumberAreaWidth(int newBlockCount)
@@ -33,7 +113,7 @@ void CodeEditor::updateLineNumberAreaWidth(int newBlockCount)
 	}
 
 	lineNumberAreaWidth = 12 + fontMetrics().width(QLatin1Char('9')) * digits;
-	setViewportMargins(lineNumberAreaWidth, 0, 0, 0);
+	setViewportMargins(lineNumberAreaWidth + 2, 0, 0, 0);
 }
 
 void CodeEditor::updateLineNumberArea(const QRect& rect, int dy)
@@ -59,18 +139,25 @@ void CodeEditor::lineNumberAreaPaintEvent(QPaintEvent* event)
 {
 	QPainter painter;
 	painter.begin(lineNumberArea);
-	painter.fillRect(QRect(0, 0, lineNumberAreaWidth, height()), Qt::lightGray);
+	painter.fillRect(QRect(0, 0, lineNumberAreaWidth, height()), lineNumbersBackgroundColor);
+	painter.setPen(lineNumbersForegroundColor);
+
+	// FIXME - Can't assign font directly for some reason
+	QFont font2;
+	font2.setFamily(font().family());
+	font2.setPointSize(font().pointSize());
+	font2.setFixedPitch(font().fixedPitch());
+	painter.setFont(font2);
 
 	QTextBlock block = firstVisibleBlock();
-	int blockNumber = block.blockNumber();
+	int blockNumber = block.blockNumber() + 1;
 	int top = (int)blockBoundingGeometry(block).translated(contentOffset()).top();
 	int bottom = top + (int)blockBoundingRect(block).height();
 
 	while (block.isValid() && top <= event->rect().bottom()) {
 		if (block.isVisible() && bottom >= event->rect().top()) {
-			QString number = QString::number(blockNumber + 1);
-			painter.setPen(Qt::black);
-			painter.drawText(0, top, lineNumberAreaWidth - 5, fontMetrics().height(), Qt::AlignRight, number);
+			QString number = QString::number(blockNumber);
+			painter.drawText(0, top, lineNumberAreaWidth - 5, fontMetrics().height(), Qt::AlignRight | Qt::AlignVCenter, number);
 		}
 
 		block = block.next();
@@ -78,6 +165,24 @@ void CodeEditor::lineNumberAreaPaintEvent(QPaintEvent* event)
 		bottom = top + (int)blockBoundingRect(block).height();
 		++blockNumber;
 	}
+}
+
+void CodeEditor::keyPressEvent(QKeyEvent* event)
+{
+	//switch (event->key()) {
+	//	case Qt::Key_Enter:
+	//	case Qt::Key_Return:
+	//	case Qt::Key_Escape:
+	//	case Qt::Key_Tab:
+	//	case Qt::Key_Backtab:
+	//		//event->ignore();
+	//		//return; // let the completer do default behavior
+	//	default:
+	//		event->ignore();
+	//		break;
+	//}
+
+	QPlainTextEdit::keyPressEvent(event);
 }
 
 void LineNumberArea::paintEvent(QPaintEvent* event)
