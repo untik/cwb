@@ -2,6 +2,7 @@
 #define CODE_EDITOR_H
 
 #include <QPlainTextEdit>
+#include <QTextBlock>
 
 class LineNumberArea;
 
@@ -37,10 +38,34 @@ private slots:
 	void updateLineNumberArea(const QRect& rect, int dy);
 
 private:
+	bool tabPressed();
+	void backtabPressed();
+	void enterPressed();
+
+private:
 	int lineNumberAreaWidth;
+	int editorTabSize;
 	LineNumberArea* lineNumberArea;
 	QColor lineNumbersBackgroundColor;
 	QColor lineNumbersForegroundColor;
+
+	// Helper class for getting current selection info
+	struct SelectionInfo
+	{
+		SelectionInfo(QTextDocument* document, QTextCursor cursor);
+
+		int start;
+		int end;
+
+		int firstBlockNumber;
+		int lastBlockNumber;
+
+		QTextBlock firstBlock;
+		QTextBlock lastBlock;
+
+		int firstBlockStart;
+		int lastBlockEnd;
+	};
 };
 
 

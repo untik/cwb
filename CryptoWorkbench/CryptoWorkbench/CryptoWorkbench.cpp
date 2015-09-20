@@ -151,10 +151,6 @@ void CryptoWorkbench::loadDefaultFiles()
 		codeEditor->setPlainText(QString::fromUtf8(codeFile.readAll()));
 		isCodeChanged = false;
 	}
-
-	//QFile leftFile("../data/left.txt");
-	//if (leftFile.open(QFile::ReadOnly | QFile::Text))
-	//	leftEditor->setPlainText(QString::fromUtf8(leftFile.readAll()));
 }
 
 void CryptoWorkbench::saveActiveScript()
@@ -178,7 +174,7 @@ void CryptoWorkbench::shortcutActivatedUncomment()
 
 void CryptoWorkbench::openClicked()
 {
-	QString fileName = QFileDialog::getOpenFileName(this, tr("Open Script"), "../scripts/", tr("Script Files (*.cwb)"));
+	QString fileName = QFileDialog::getOpenFileName(this, tr("Open Script"), "../scripts/", tr("Script Files (*.js)"));
 	QFile file(fileName);
 	if (file.open(QIODevice::ReadOnly | QIODevice::Text)) {
 		QByteArray data = file.readAll();
@@ -191,7 +187,7 @@ void CryptoWorkbench::openClicked()
 
 void CryptoWorkbench::saveAsClicked()
 {
-	QString fileName = QFileDialog::getSaveFileName(this, tr("Save Script"), "../scripts/", tr("Script Files (*.cwb)"));
+	QString fileName = QFileDialog::getSaveFileName(this, tr("Save Script"), "../scripts/", tr("Script Files (*.js)"));
 	QFile file(fileName);
 	if (file.open(QIODevice::WriteOnly | QIODevice::Text | QIODevice::Truncate)) {
 		file.write(codeEditor->toPlainText().toUtf8());

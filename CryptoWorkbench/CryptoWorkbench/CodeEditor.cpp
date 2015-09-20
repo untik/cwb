@@ -2,6 +2,7 @@
 #include <QPainter>
 #include <QTextBlock>
 #include <QTextDocumentFragment>
+#include <QDebug>
 
 CodeEditor::CodeEditor(QWidget *parent)
 	: QPlainTextEdit(parent)
@@ -15,6 +16,7 @@ CodeEditor::CodeEditor(QWidget *parent)
 	lineNumbersForegroundColor = Qt::black;
 
 	updateLineNumberAreaWidth(0);
+	setTabSize(4);
 }
 
 CodeEditor::~CodeEditor()
@@ -23,34 +25,17 @@ CodeEditor::~CodeEditor()
 void CodeEditor::setTabSize(int spaces)
 {
 	setTabStopWidth(fontMetrics().width(QLatin1Char('9')) * spaces);
+	editorTabSize = spaces;
 }
 
 void CodeEditor::commentSelection()
 {
 	QTextCursor cursor = textCursor();
-	cursor.beginEditBlock();
+	SelectionInfo selection(document(), cursor);
 
-	int start = cursor.selectionStart();
-	int end = cursor.selectionEnd();
-
-	cursor.setPosition(start);
-	int firstLine = cursor.blockNumber();
-	cursor.setPosition(end, QTextCursor::KeepAnchor);
-	int lastLine = cursor.blockNumber();
-	//qWarning() << "start: " << firstLine << " end: " << lastLine << endl;
-
-	QTextBlock blockStart = document()->findBlockByNumber(firstLine);
-	int startCharIndex = blockStart.position();
-	QTextBlock blockEnd = document()->findBlockByNumber(lastLine);
-	int endCharIndex = blockEnd.position() + blockEnd.length() - 1;
-
-	cursor.setPosition(startCharIndex);
-	cursor.setPosition(endCharIndex, QTextCursor::KeepAnchor);
-
-	setTextCursor(cursor);
-	QTextDocumentFragment fragment = cursor.selection();
-	QString selected = fragment.toPlainText();
-	//qDebug() << selected;
+	cursor.setPosition(selection.firstBlockStart);
+	cursor.setPosition(selection.lastBlockEnd, QTextCursor::KeepAnchor);
+	QString selected = cursor.selection().toPlainText();
 
 	QStringList list = selected.split('\n');
 	for (int i = 0; i < list.count(); i++) {
@@ -59,46 +44,38 @@ void CodeEditor::commentSelection()
 	selected = list.join('\n');
 
 	cursor.insertText(selected);
-	cursor.endEditBlock();
+
+	cursor.setPosition(selection.firstBlockStart);
+	cursor.setPosition(selection.lastBlockEnd + (list.count() * 2), QTextCursor::KeepAnchor);
+	setTextCursor(cursor);
 }
 
 void CodeEditor::uncommentSelection()
 {
 	QTextCursor cursor = textCursor();
-	cursor.beginEditBlock();
+	SelectionInfo selection(document(), cursor);
 
-	int start = cursor.selectionStart();
-	int end = cursor.selectionEnd();
+	cursor.setPosition(selection.firstBlockStart);
+	cursor.setPosition(selection.lastBlockEnd, QTextCursor::KeepAnchor);
+	QString selected = cursor.selection().toPlainText();
 
-	cursor.setPosition(start);
-	int firstLine = cursor.blockNumber();
-	cursor.setPosition(end, QTextCursor::KeepAnchor);
-	int lastLine = cursor.blockNumber();
-	//qWarning() << "start: " << firstLine << " end: " << lastLine << endl;
-
-	QTextBlock blockStart = document()->findBlockByNumber(firstLine);
-	int startCharIndex = blockStart.position();
-	QTextBlock blockEnd = document()->findBlockByNumber(lastLine);
-	int endCharIndex = blockEnd.position() + blockEnd.length() - 1;
-
-	cursor.setPosition(startCharIndex);
-	cursor.setPosition(endCharIndex, QTextCursor::KeepAnchor);
-
-	setTextCursor(cursor);
-	QTextDocumentFragment fragment = cursor.selection();
-	QString selected = fragment.toPlainText();
-	//qDebug() << selected;
+	int removedTotal = 0;
 
 	QStringList list = selected.split('\n');
 	for (int i = 0; i < list.count(); i++) {
-		QString line = list.at(i);
-		if (line.startsWith("//"))
+		const QString& line = list.at(i);
+		if (line.startsWith("//")) {
 			list.replace(i, line.mid(2));
+			removedTotal += 2;
+		}
 	}
 	selected = list.join('\n');
 
 	cursor.insertText(selected);
-	cursor.endEditBlock();
+
+	cursor.setPosition(selection.firstBlockStart);
+	cursor.setPosition(selection.lastBlockEnd - removedTotal, QTextCursor::KeepAnchor);
+	setTextCursor(cursor);
 }
 
 void CodeEditor::updateLineNumberAreaWidth(int newBlockCount)
@@ -169,20 +146,176 @@ void CodeEditor::lineNumberAreaPaintEvent(QPaintEvent* event)
 
 void CodeEditor::keyPressEvent(QKeyEvent* event)
 {
-	//switch (event->key()) {
-	//	case Qt::Key_Enter:
-	//	case Qt::Key_Return:
-	//	case Qt::Key_Escape:
-	//	case Qt::Key_Tab:
-	//	case Qt::Key_Backtab:
-	//		//event->ignore();
-	//		//return; // let the completer do default behavior
-	//	default:
-	//		event->ignore();
-	//		break;
-	//}
+	switch (event->key()) {
+		case Qt::Key_Enter:
+		case Qt::Key_Return:
+			QPlainTextEdit::keyPressEvent(event);
+			enterPressed();
+			return;
+
+		case Qt::Key_Tab:
+			if (tabPressed())
+				return;
+			break;
+
+		case Qt::Key_Backtab:
+			backtabPressed();
+			return;
+	}
 
 	QPlainTextEdit::keyPressEvent(event);
+}
+
+bool CodeEditor::tabPressed()
+{
+	QTextCursor cursor = textCursor();
+	SelectionInfo selection(document(), cursor);
+
+	// No selection
+	if (selection.start == selection.end)
+		return false;
+
+	// Single line, not fully selected
+	if (selection.firstBlockNumber == selection.lastBlockNumber && (selection.start != selection.firstBlockStart || selection.end != selection.lastBlockEnd))
+		return false;
+
+	// Multiple lines are selected
+	cursor.setPosition(selection.firstBlockStart);
+	cursor.setPosition(selection.lastBlockEnd, QTextCursor::KeepAnchor);
+	QString selected = cursor.selection().toPlainText();
+
+	QStringList list = selected.split('\n');
+	for (int i = 0; i < list.count(); i++) {
+		list.replace(i, "\t" + list.at(i));
+	}
+	selected = list.join('\n');
+
+	cursor.insertText(selected);
+
+	cursor.setPosition(selection.firstBlockStart);
+	cursor.setPosition(selection.lastBlockEnd + list.count(), QTextCursor::KeepAnchor);
+	setTextCursor(cursor);
+	return true;
+}
+
+void CodeEditor::backtabPressed()
+{
+	QTextCursor cursor = textCursor();
+	SelectionInfo selection(document(), cursor);
+
+	// No selection
+	if (selection.start == selection.end) {
+		// At the start of a line
+		if (selection.start == selection.firstBlockStart)
+			return;
+
+		// Select previous 0 - 4 characters
+		int selectionColumn = selection.start - selection.firstBlockStart;
+		int previousSectionLength = qMin(4, selectionColumn);
+
+		cursor.setPosition(selection.start);
+		cursor.setPosition(selection.start - previousSectionLength, QTextCursor::KeepAnchor);
+		QString previousText = cursor.selectedText();
+
+		qDebug() << selectionColumn << previousSectionLength << previousText;
+
+		// Remove tab
+		cursor.setPosition(selection.start);
+		if (previousText.at(previousText.length() - 1) == "\t") {
+			cursor.deletePreviousChar();
+			return;
+		}
+
+		// Remove spaces
+		cursor.beginEditBlock();
+		for (int i = previousText.length() - 1; i >= 0; i--) {
+			if (previousText.at(i) == ' ')
+				cursor.deletePreviousChar();
+			else
+				break;
+		}
+		cursor.endEditBlock();
+		return;
+	}
+
+	// Multiple lines are selected
+	cursor.setPosition(selection.firstBlockStart);
+	cursor.setPosition(selection.lastBlockEnd, QTextCursor::KeepAnchor);
+	QString selected = cursor.selection().toPlainText();
+
+	int removedTotal = 0;
+
+	QStringList list = selected.split('\n');
+	for (int i = 0; i < list.count(); i++) {
+		const QString& line = list.at(i);
+		int removeChars = 0;
+
+		if (line.startsWith("    "))
+			removeChars = 4;
+		else if (line.startsWith("   "))
+			removeChars = 3;
+		else if (line.startsWith("  "))
+			removeChars = 2;
+		else if (line.startsWith("\t") || line.startsWith(" "))
+			removeChars = 1;
+
+		list.replace(i, line.mid(removeChars));
+		removedTotal += removeChars;
+	}
+	selected = list.join('\n');
+
+	cursor.insertText(selected);
+
+	cursor.setPosition(selection.firstBlockStart);
+	cursor.setPosition(selection.lastBlockEnd - removedTotal, QTextCursor::KeepAnchor);
+	setTextCursor(cursor);
+}
+
+void CodeEditor::enterPressed()
+{
+	QTextCursor cursor = textCursor();
+	SelectionInfo selection(document(), cursor);
+
+	if (selection.start != selection.end)
+		return;
+
+	if (selection.firstBlockNumber == 0)
+		return;
+
+	if (selection.start != selection.firstBlockStart)
+		return;
+
+	QTextBlock previousBlock = document()->findBlockByNumber(selection.firstBlockNumber - 1);
+	QString blockText = previousBlock.text();
+
+	// Get whitespace at the beginning of the previous block
+	int whitespaceLength = 0;
+	for (int i = 0; i < blockText.length(); i++) {
+		QChar c = blockText.at(i);
+		if (c == '\t' || c == ' ')
+			whitespaceLength++;
+		else
+			break;
+	}
+
+	cursor.insertText(blockText.left(whitespaceLength));
+}
+
+CodeEditor::SelectionInfo::SelectionInfo(QTextDocument* document, QTextCursor cursor)
+{
+	start = cursor.selectionStart();
+	end = cursor.selectionEnd();
+
+	cursor.setPosition(start);
+	firstBlockNumber = cursor.blockNumber();
+	cursor.setPosition(end, QTextCursor::KeepAnchor);
+	lastBlockNumber = cursor.blockNumber();
+
+	firstBlock = document->findBlockByNumber(firstBlockNumber);
+	lastBlock = document->findBlockByNumber(lastBlockNumber);
+
+	firstBlockStart = firstBlock.position();
+	lastBlockEnd = lastBlock.position() + lastBlock.length() - 1;
 }
 
 void LineNumberArea::paintEvent(QPaintEvent* event)
