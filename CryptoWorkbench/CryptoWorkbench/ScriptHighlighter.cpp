@@ -7,74 +7,83 @@ ScriptHighlighter::ScriptHighlighter(QTextDocument* parent, StyleType style)
 {
 	initStyle(style);
 
-	QStringList keywords;
-	keywords << "break" << "do" << "instanceof" << "typeof" << "case" << "else" << "new" << "var"
-		<< "catch" << "finally" << "return" << "void" << "continue" << "for" << "switch" << "while"
-		<< "debugger" << "function" << "this " << "with" << "default" << "if" << "throw" << "delete" << "in" << "try"
-		<< "null" << "true" << "false";
-
 	QRegularExpression re;
 
-	foreach(const QString &keyword, keywords)
-	{
-		re = QRegularExpression("\\b" + keyword + "\\b");
-		highlightingRules.append(HighlightingRule(re, keywordFormat));
-	}
+	// Regular expressions based on http://prismjs.com
 
-	re = QRegularExpression("\\b-?(0x[\\dA-Fa-f]+|\\d*\\.?\\d+([Ee]-?\\d+)?|NaN|-?Infinity)\\b"); // "\\b[0-9\\.]+\\b"
+	// Keywords
+	re = QRegularExpression("\\b(as|async|await|break|case|catch|class|const|continue|debugger|default|delete|do|else|enum|export|extends|false|finally|for|from|function|get|if|implements|import|in|instanceof|interface|let|new|null|of|package|private|protected|public|return|set|static|super|switch|this|throw|true|try|typeof|var|void|while|with|yield)\\b");
+	highlightingRules.append(HighlightingRule(re, keywordFormat));
+
+	// Numbers
+	re = QRegularExpression("\\b-?(0x[\\dA-Fa-f]+|0b[01]+|0o[0-7]+|\\d*\\.?\\d+([Ee][+-]?\\d+)?|NaN|Infinity)\\b");
+	//re = QRegularExpression("\\b-?(0x[\\dA-Fa-f]+|\\d*\\.?\\d+([Ee]-?\\d+)?|NaN|-?Infinity)\\b");
 	highlightingRules.append(HighlightingRule(re, numberFormat));
 
-	re = QRegularExpression("\".*\"");
+	// Strings
+	re = QRegularExpression("([\"'])(\\\\(?:\\r\\n|[\\s\\S])|(?!\\1)[^\\\\\\r\\n])*\\1");
 	highlightingRules.append(HighlightingRule(re, quotationFormat));
 
+	// RegEx
+	re = QRegularExpression("(^|[^/])\\/(?!\\/)(\\[.+?]|\\\\.|[^/\\\\\\r\\n])+\\/[gimyu]{0,5}(?=\\s*($|[\\r\\n,.;})]))");
+	highlightingRules.append(HighlightingRule(re, quotationFormat));
+
+	// Special global variable
 	re = QRegularExpression("\\bworkspace\\b");
 	highlightingRules.append(HighlightingRule(re, globalPropertyFormat));
 
-	//re = QRegularExpression("\\boutput\\b");
-	//highlightingRules.append(HighlightingRule(re, globalPropertyFormat));
+	// CWB classes
+	QStringList toolsMembers;
+	toolsMembers << "rotateAlphabet" << "replaceLetters" << "ngramFrequency" << "wordFrequency" << "rot13" << "frequencyList" << "frequencyGraph";
+	defineClass("Tools", toolsMembers);
 
-	QStringList exceptions;
-	exceptions << "destroyed" << "objectNameChanged" << "deleteLater" << "_q_reregisterTimers";
+	QStringList fileMembers;
+	fileMembers << "readFile";
+	defineClass("File", fileMembers);
 
-	//int count = AlgorithmsCrypto::staticMetaObject.methodCount();
-	//for (int i = 0; i < count; i++) {
-	//	QString name = AlgorithmsCrypto::staticMetaObject.method(i).name();
-	//	if (!exceptions.contains(name)) {
-	//		re = QRegularExpression("\\bCrypto\\." + name + "\\b");
-	//		highlightingRules.append(HighlightingRule(re, objectMembersFormat, 7));
-	//	}
-	//}
+	defineClass("ByteArray", QStringList());
 
-	re = QRegularExpression("\\bTools\\b");
-	highlightingRules.append(HighlightingRule(re, globalClassFormat));
+	// Enums
+	QStringList hashValues;
+	hashValues << "Md4" << "Md5" << "Sha1" << "Sha224" << "Sha256" << "Sha384" << "Sha512" << "Sha3_224" << "Sha3_256" << "Sha3_384" << "Sha3_512";
+	defineEnum("Tools", "Hash", hashValues);
 
-	re = QRegularExpression("\\bTools\\.rotateAlphabet\\b");
-	highlightingRules.append(HighlightingRule(re, objectMembersFormat, 6));
-	re = QRegularExpression("\\bTools\\.replaceLetters\\b");
-	highlightingRules.append(HighlightingRule(re, objectMembersFormat, 6));
-	re = QRegularExpression("\\bTools\\.ngramFrequency\\b");
-	highlightingRules.append(HighlightingRule(re, objectMembersFormat, 6));
-	re = QRegularExpression("\\bTools\\.wordFrequency\\b");
-	highlightingRules.append(HighlightingRule(re, objectMembersFormat, 6));
-	re = QRegularExpression("\\bTools\\.rot13\\b");
-	highlightingRules.append(HighlightingRule(re, objectMembersFormat, 6));
-	re = QRegularExpression("\\bTools\\.frequencyList\\b");
-	highlightingRules.append(HighlightingRule(re, objectMembersFormat, 6));
-	re = QRegularExpression("\\bTools\\.frequencyGraph\\b");
-	highlightingRules.append(HighlightingRule(re, objectMembersFormat, 6));
+	QStringList stringFormatValues;
+	stringFormatValues << "Latin1" << "Utf8" << "Hex" << "Base64";
+	defineEnum("ByteArray", "StringFormat", stringFormatValues);
 
-	re = QRegularExpression("\\bFile\\b");
-	highlightingRules.append(HighlightingRule(re, globalClassFormat));
+	QStringList hexFormatValues;
+	hexFormatValues << "Basic" << "Spaces" << "Columns";
+	defineEnum("ByteArray", "HexFormat", hexFormatValues);
 
-	re = QRegularExpression("\\bFile\\.readFile\\b");
-	highlightingRules.append(HighlightingRule(re, objectMembersFormat, 5));
-
-
+	// Comments
 	re = QRegularExpression("//[^\n]*");
 	highlightingRules.append(HighlightingRule(re, singleLineCommentFormat));
 
 	commentStartExpression = QRegularExpression("/\\*");
 	commentEndExpression = QRegularExpression("\\*/");
+}
+
+void ScriptHighlighter::defineClass(const QString& className, const QStringList& functions)
+{
+	QRegularExpression re = QRegularExpression("\\b" + className + "\\b");
+	highlightingRules.append(HighlightingRule(re, globalClassFormat));
+
+	for (int i = 0; i < functions.count(); i++) {
+		re = QRegularExpression("\\b" + className + "\\." + functions.at(i) + "\\b");
+		highlightingRules.append(HighlightingRule(re, objectMembersFormat, className.length() + 1));
+	}
+}
+
+void ScriptHighlighter::defineEnum(const QString& className, const QString& objectName, const QStringList& values)
+{
+	QRegularExpression re = QRegularExpression("\\b" + className + "\\." + objectName + "\\b");
+	highlightingRules.append(HighlightingRule(re, objectMembersFormat, className.length() + 1));
+
+	for (int i = 0; i < values.count(); i++) {
+		re = QRegularExpression("\\b" + className + "\\." + objectName + "\\." + values.at(i) + "\\b");
+		highlightingRules.append(HighlightingRule(re, objectMembersFormat, className.length() + objectName.length() + 2));
+	}
 }
 
 void ScriptHighlighter::highlightBlock(const QString &text)

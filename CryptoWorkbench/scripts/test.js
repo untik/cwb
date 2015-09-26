@@ -3,12 +3,12 @@ var input = new ByteArray("The quick brown fox jumps over the lazy dog");
 function testHash()
 {
     // Test SHA1
-    var v1 = input.hash(2).hex();
+    var v1 = input.hash(Tools.Hash.Sha1).hex();
 	var v2 = "2fd4e1c67a2d28fced849ee1bb76e7391b93eb12";
 	if (v1 != v2)
 		return false;
 
-	v1 = new ByteArray("").hash(2).hex();
+	v1 = new ByteArray("").hash(Tools.Hash.Sha1).hex();
 	v2 = "da39a3ee5e6b4b0d3255bfef95601890afd80709";
 	if (v1 != v2)
 		return false;
@@ -18,20 +18,20 @@ function testHash()
 
 function testHex()
 {
-	var binary = input.hash(2);
+	var binary = input.hash(Tools.Hash.Sha1);
 
 	var v1 = binary.hex();
-	var v2 = new ByteArray(binary.hex(), 2).hex();
+	var v2 = new ByteArray(binary.hex(), ByteArray.StringFormat.Hex).hex();
 	if (v1 != v2)
 		return false;
 
-	v1 = new ByteArray(binary.hex(), 2).hex();
+	v1 = new ByteArray(binary.hex(), ByteArray.StringFormat.Hex).hex();
 	if (v1 != binary.hex())
 		return false;
-	v1 = new ByteArray(binary.hex().toUpperCase(), 2).hex();
+	v1 = new ByteArray(binary.hex().toUpperCase(), ByteArray.StringFormat.Hex).hex();
 	if (v1 != binary.hex())
 		return false;
-	v1 = new ByteArray(binary.hex(1), 2).hex();
+	v1 = new ByteArray(binary.hex(ByteArray.HexFormat.Spaces), ByteArray.StringFormat.Hex).hex();
 	if (v1 != binary.hex())
 		return false;
 
@@ -40,13 +40,13 @@ function testHex()
 
 function testBase64()
 {
-	var binary = input.hash(2);
+	var binary = input.hash(Tools.Hash.Sha1);
 
 	v1 = binary.base64();
 
 	var v1 = binary.base64();
-	var v2 = new ByteArray(v1, 3);
-	var v3 = v2.base64()
+	var v2 = new ByteArray(v1, ByteArray.StringFormat.Base64);
+	var v3 = v2.base64();
 	if (v1 != v3)
 		return false;
 	if (v2.hex() != binary.hex())

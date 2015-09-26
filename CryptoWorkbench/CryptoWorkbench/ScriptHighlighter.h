@@ -27,6 +27,8 @@ public:
 protected:
 	void highlightBlock(const QString& text);
 	void initStyle(StyleType style);
+	void defineClass(const QString& className, const QStringList& functions);
+	void defineEnum(const QString& className, const QString& objectName, const QStringList& values);
 
 private:
 	struct HighlightingRule

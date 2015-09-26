@@ -123,4 +123,8 @@
       <Filter>Source Files\JavascriptModules</Filter>
     </ClInclude>
   </ItemGroup>
+  <ItemGroup>
+    <None Include="..\data\corelib.js" />
+    <None Include="..\data\help.html" />
+  </ItemGroup>
 </Project>
